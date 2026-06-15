@@ -1,0 +1,147 @@
+{% extends "base_sidebar.html" %}
+{% block title %}Notes & Translation — LinguaVoice{% endblock %}
+{% block page_title %}Voice Notes{% endblock %}
+{% block page_subtitle %}Write, speak, and translate your language notes{% endblock %}
+
+{% block content %}
+
+<div class="animate-slide-up-1" style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;">
+  <select id="target-lang" class="form-input" style="width:auto;padding:8px 14px;font-size:0.875rem;" onchange="onLangChange()">
+    <option value="es" {% if target_language == 'es' %}selected{% endif %}>Translate to Spanish</option>
+    <option value="en" {% if target_language == 'en' %}selected{% endif %}>Translate to English</option>
+    <option value="hi" {% if target_language == 'hi' %}selected{% endif %}>Translate to Hindi</option>
+  </select>
+  <button onclick="translateNote()" class="btn btn-primary">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    Translate
+  </button>
+  <button onclick="clearAll()" class="btn btn-ghost">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+    Clear
+  </button>
+  <div id="translate-status" style="font-size:0.8125rem;color:var(--text-muted);"></div>
+</div>
+
+<div class="notes-layout animate-slide-up-2">
+
+  <!-- Source -->
+  <div class="notes-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <span style="font-size:0.875rem;font-weight:700;color:var(--text-primary);"><i class="fa-solid fa-pen"></i>️ Your Notes</span>
+      <div style="display:flex;gap:6px;">
+        <button onclick="copyText('source-text')" class="btn btn-ghost btn-sm">Copy</button>
+        <button onclick="speakText('source-text')" class="btn btn-ghost btn-sm"><i class="fa-solid fa-volume-up"></i> Speak</button>
+      </div>
+    </div>
+    <textarea
+      id="source-text"
+      class="notes-textarea"
+      placeholder="Write your notes here… Type in any language and translate instantly.&#10;&#10;Examples:&#10;• Write vocabulary sentences&#10;• Draft conversation practice&#10;• Take lesson notes"
+      oninput="autoSave()"></textarea>
+    <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:0.75rem;color:var(--text-muted);" id="char-count">0 characters</span>
+      <span style="font-size:0.75rem;color:var(--text-muted);" id="save-indicator"></span>
+    </div>
+  </div>
+
+  <!-- Translation -->
+  <div class="notes-panel" style="background:var(--bg-hover);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <span style="font-size:0.875rem;font-weight:700;color:var(--text-primary);" id="trans-label"><i class="fa-solid fa-globe"></i> Translation</span>
+      <div style="display:flex;gap:6px;">
+        <button onclick="copyText('translated-text')" class="btn btn-ghost btn-sm">Copy</button>
+        <button onclick="speakText('translated-text')" class="btn btn-ghost btn-sm"><i class="fa-solid fa-volume-up"></i> Speak</button>
+      </div>
+    </div>
+    <div
+      id="translated-text"
+      style="flex:1;font-size:0.9375rem;line-height:1.8;color:var(--text-primary);overflow-y:auto;"
+    >
+      <span style="color:var(--text-muted);">Translation will appear here…</span>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const langNames = { en: 'English', es: 'Spanish', hi: 'Hindi' };
+  let autoSaveTimer = null;
+
+  // Load saved notes
+  const saved = localStorage.getItem('lv_notes');
+  if (saved) document.getElementById('source-text').value = saved;
+
+  document.getElementById('source-text').addEventListener('input', function() {
+    document.getElementById('char-count').textContent = this.value.length + ' characters';
+  });
+
+  function autoSave() {
+    const text = document.getElementById('source-text').value;
+    document.getElementById('char-count').textContent = text.length + ' characters';
+    clearTimeout(autoSaveTimer);
+    document.getElementById('save-indicator').textContent = 'Saving…';
+    autoSaveTimer = setTimeout(() => {
+      localStorage.setItem('lv_notes', text);
+      document.getElementById('save-indicator').innerHTML = '<i class="fa-solid fa-check"></i> Saved locally';
+    }, 800);
+  }
+
+  function onLangChange() {
+    const lang = document.getElementById('target-lang').value;
+    document.getElementById('trans-label').innerHTML = `<i class="fa-solid fa-globe"></i> ${langNames[lang]} Translation`;
+  }
+
+  async function translateNote() {
+    const text = document.getElementById('source-text').value.trim();
+    if (!text) return showToast('Write something to translate first', 'info');
+
+    const lang = document.getElementById('target-lang').value;
+    const status = document.getElementById('translate-status');
+    status.textContent = 'Translating…';
+
+    try {
+      const res = await fetch('/api/notes/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, lang })
+      });
+      const data = await res.json();
+      const out = document.getElementById('translated-text');
+      out.textContent = data.translation || data.translated || data.result || JSON.stringify(data);
+      status.innerHTML = '<i class="fa-solid fa-check"></i> Translated';
+      showToast('Translation complete!', 'success');
+    } catch(e) {
+      document.getElementById('translated-text').textContent = 'Translation failed. Check your connection.';
+      status.textContent = '';
+      showToast('Translation failed', 'error');
+    }
+  }
+
+  function copyText(id) {
+    const el = document.getElementById(id);
+    const text = el.value || el.textContent;
+    navigator.clipboard.writeText(text).then(() => showToast('Copied!', 'success'));
+  }
+
+  function speakText(id) {
+    const el = document.getElementById(id);
+    const text = el.value || el.textContent;
+    if (!text.trim()) return;
+    const utt = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(utt);
+  }
+
+  function clearAll() {
+    document.getElementById('source-text').value = '';
+    document.getElementById('translated-text').innerHTML = '<span style="color:var(--text-muted);">Translation will appear here…</span>';
+    document.getElementById('char-count').textContent = '0 characters';
+    document.getElementById('save-indicator').textContent = '';
+    document.getElementById('translate-status').textContent = '';
+    localStorage.removeItem('lv_notes');
+  }
+
+  onLangChange();
+</script>
+{% endblock %}

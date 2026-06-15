@@ -1,0 +1,112 @@
+{% extends "base_sidebar.html" %}
+{% block title %}Certificate — LinguaVoice{% endblock %}
+{% block page_title %}Your Certificate{% endblock %}
+{% block page_subtitle %}Congratulations on completing your language journey!{% endblock %}
+
+{% block content %}
+<div class="animate-slide-up-1" style="max-width:680px;margin:0 auto;text-align:center;">
+
+  <!-- Confetti animation on load -->
+  <div id="confetti-wrap" style="position:fixed;inset:0;pointer-events:none;z-index:9000;"></div>
+
+  <!-- Certificate Card -->
+  <div class="glass-card-heavy" style="padding:56px 56px 48px;border-radius:32px;position:relative;overflow:hidden;" id="certificate">
+    <!-- Decorative gradient background -->
+    <div style="position:absolute;inset:0;background:var(--gradient-hero);opacity:0.04;pointer-events:none;"></div>
+    <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,var(--accent),transparent 70%);opacity:0.08;pointer-events:none;"></div>
+    <div style="position:absolute;bottom:-40px;left:-40px;width:160px;height:160px;background:radial-gradient(circle,#8B5CF6,transparent 70%);opacity:0.08;pointer-events:none;"></div>
+
+    <div style="position:relative;z-index:1;">
+      <!-- Logo + Brand -->
+      <img src="/static/images/serphawk_logo.jpg" style="width:64px;height:64px;border-radius:18px;object-fit:cover;box-shadow:var(--shadow-md);margin-bottom:20px;">
+      <div style="font-size:0.8125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:8px;">LinguaVoice Academy</div>
+
+      <!-- Certificate of Completion -->
+      <div style="font-size:1.75rem;font-weight:800;color:var(--text-primary);margin-bottom:4px;">Certificate of Completion</div>
+      <div style="width:80px;height:3px;background:var(--gradient-accent);border-radius:100px;margin:16px auto;"></div>
+
+      <p style="font-size:1rem;color:var(--text-secondary);margin-bottom:28px;">This certifies that</p>
+
+      <div style="font-size:2.5rem;font-weight:800;color:var(--accent);margin-bottom:20px;font-style:italic;">{{ user_name }}</div>
+
+      <p style="font-size:1rem;color:var(--text-secondary);line-height:1.7;max-width:400px;margin:0 auto 28px;">
+        has successfully completed all <strong>100 levels</strong> of the
+        <strong>{{ language_name }}</strong> language course and demonstrated
+        outstanding dedication to language mastery.
+      </p>
+
+      <!-- Stats row -->
+      <div style="display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:32px;">
+        <div style="text-align:center;">
+          <div style="font-size:1.75rem;font-weight:800;color:var(--text-primary);">100</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Levels</div>
+        </div>
+        <div style="width:1px;background:var(--border);"></div>
+        <div style="text-align:center;">
+          <div style="font-size:1.75rem;font-weight:800;color:#F59E0B;">{{ total_xp | default(5200) | int }}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">XP Earned</div>
+        </div>
+        <div style="width:1px;background:var(--border);"></div>
+        <div style="text-align:center;">
+          <div style="font-size:1.75rem;font-weight:800;color:#10B981;">{{ language_name }}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Language</div>
+        </div>
+      </div>
+
+      <!-- Date -->
+      <div style="font-size:0.875rem;color:var(--text-muted);margin-bottom:32px;" id="cert-date"></div>
+
+      <!-- Signature line -->
+      <div style="display:flex;justify-content:center;gap:60px;flex-wrap:wrap;margin-bottom:4px;">
+        <div style="text-align:center;">
+          <div style="font-size:1.25rem;font-weight:800;color:var(--accent);font-style:italic;border-bottom:2px solid var(--border);padding-bottom:8px;margin-bottom:8px;min-width:160px;">LinguaVoice AI</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">Platform</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:1.25rem;font-weight:800;color:var(--text-primary);font-style:italic;border-bottom:2px solid var(--border);padding-bottom:8px;margin-bottom:8px;min-width:160px;">Serp Hawk</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">AI Director</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="animate-slide-up-2" style="display:flex;gap:12px;justify-content:center;margin-top:28px;flex-wrap:wrap;">
+    <button onclick="window.print()" class="btn btn-secondary btn-lg">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print Certificate
+    </button>
+    <a href="/dashboard" class="btn btn-primary btn-lg">Back to Dashboard <i class="fa-solid fa-chevron-right"></i></a>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.getElementById('cert-date').textContent = 'Issued on ' + new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
+
+  // Simple CSS confetti
+  function launchConfetti() {
+    const colors = ['#5E6AD2','#8B5CF6','#10B981','#F59E0B','#EF4444','#06B6D4'];
+    const wrap = document.getElementById('confetti-wrap');
+    for (let i = 0; i < 80; i++) {
+      const dot = document.createElement('div');
+      dot.style.cssText = `
+        position:absolute;width:8px;height:8px;border-radius:2px;
+        background:${colors[Math.floor(Math.random()*colors.length)]};
+        left:${Math.random()*100}%;top:-10px;
+        animation:confettiFall ${1.5+Math.random()*2}s ease-in ${Math.random()*1.5}s forwards;
+        transform:rotate(${Math.random()*360}deg);
+      `;
+      wrap.appendChild(dot);
+    }
+    setTimeout(() => wrap.innerHTML = '', 5000);
+  }
+
+  const style = document.createElement('style');
+  style.textContent = `@keyframes confettiFall{to{top:110vh;transform:rotate(${Math.random()*720}deg);}}`;
+  document.head.appendChild(style);
+  launchConfetti();
+</script>
+{% endblock %}

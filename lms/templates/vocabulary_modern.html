@@ -1,0 +1,217 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Vocabulary - LinguaVoice{% endblock %}
+{% block page_title %}Vocabulary Bank 📚{% endblock %}
+{% block page_subtitle %}Manage your dictionaries and validate new terms{% endblock %}
+
+{% block content %}
+<!-- Language Filter -->
+<div class="vocab-header">
+    <div class="tabs-container">
+        <button class="tab-btn active" onclick="switchTab('my-words')">My Words</button>
+        <button class="tab-btn" onclick="switchTab('oov')">OOV</button>
+        <button class="tab-btn" onclick="switchTab('discover')">Discover</button>
+    </div>
+    <select id="vocab-lang-filter" onchange="filterByLanguage()" class="lang-filter">
+        <option value="all">All Languages</option>
+        <option value="en">English</option>
+        <option value="es">Spanish</option>
+        <option value="hi">Hindi</option>
+    </select>
+</div>
+
+<!-- My Words Section -->
+<div id="my-words" class="vocab-section active">
+    <input type="text" class="search-box" id="my-vocab-search" placeholder="Search your vocabulary...">
+    <div id="my-vocab-grid" class="vocab-grid">
+        <p class="text-muted">Loading...</p>
+    </div>
+</div>
+
+<!-- OOV Section -->
+<div id="oov" class="vocab-section">
+    <div class="info-card">
+        <h3 class="card-title">Out of Vocabulary</h3>
+        <p class="text-muted">Terms detected in speech that are not yet in your validated dictionary.</p>
+    </div>
+    <div id="oov-grid" class="vocab-grid"></div>
+</div>
+
+<!-- Discover Section -->
+<div id="discover" class="vocab-section">
+    <div class="discover-header">
+        <div>
+            <h3 class="card-title">Discovery Mode</h3>
+            <p id="learn-status" class="text-muted">Generating stream...</p>
+        </div>
+        <div class="discover-controls">
+            <select id="learn-lang-select" onchange="restartLearning()" class="lang-select">
+                <option value="en">English</option>
+                <option value="es">Spanish</option>
+                <option value="hi">Hindi</option>
+            </select>
+            <button class="btn btn-secondary" onclick="toggleLearningLoop()" id="learn-toggle-btn">Pause</button>
+        </div>
+    </div>
+    <div id="learn-grid" class="vocab-grid"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let myVocab = [];
+    let oovWords = [];
+    let learnLoopInterval = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadVocabulary();
+        loadOOV();
+    });
+
+    function switchTab(tabId) {
+        // Update buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+        
+        // Update sections
+        document.querySelectorAll('.vocab-section').forEach(section => section.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        
+        // Handle learning loop
+        if (tabId === 'discover' && !learnLoopInterval) {
+            startLearningLoop();
+        } else if (tabId !== 'discover') {
+            stopLearningLoop();
+        }
+    }
+
+    async function loadVocabulary() {
+        try {
+            const res = await fetch('/api/get_vocabulary_bank_full');
+            myVocab = await res.json();
+            renderMyVocab();
+        } catch (e) {
+            console.error('Error loading vocab:', e);
+        }
+    }
+
+    function filterByLanguage() {
+        renderMyVocab();
+        loadOOV();
+    }
+    
+    function renderMyVocab() {
+        const query = document.getElementById('my-vocab-search').value.toLowerCase();
+        const langFilter = document.getElementById('vocab-lang-filter').value;
+        const container = document.getElementById('my-vocab-grid');
+        
+        let filtered = myVocab.filter(w => w.word.toLowerCase().includes(query));
+        if (langFilter !== 'all') {
+            filtered = filtered.filter(w => w.language === langFilter);
+        }
+        
+        if (filtered.length === 0) {
+            container.innerHTML = '<p style="color: #6b7280;">No words found.</p>';
+            return;
+        }
+        
+        container.innerHTML = filtered.map(w => `
+            <div class="word-card">
+                <div class="word-header">
+                    <h3 class="word-title">${w.word}</h3>
+                    <span class="word-lang">${w.language}</span>
+                </div>
+                <p class="word-meaning">${formatMeaning(w.meaning)}</p>
+                <div class="word-footer">Uses: ${w.frequency || 1}</div>
+            </div>
+        `).join('');
+    }
+
+    async function loadOOV() {
+        try {
+            const res = await fetch('/api/get_oov_words');
+            oovWords = await res.json();
+            const container = document.getElementById('oov-grid');
+            const langFilter = document.getElementById('vocab-lang-filter').value;
+            
+            let filtered = oovWords;
+            if (langFilter !== 'all') {
+                filtered = oovWords.filter(w => w.language === langFilter);
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<p style="color: #6b7280;">No OOV words found.</p>';
+                return;
+            }
+            
+            container.innerHTML = filtered.map(w => `
+                <div class="word-card" style="border-left: 3px solid #f59e0b;">
+                    <h3 class="word-title">${w.word}</h3>
+                    <p style="font-size: 0.875rem; color: #6b7280; margin: 0.5rem 0;">Language: ${w.language.toUpperCase()}</p>
+                    <button class="tab-btn" onclick="addToVocab('${w.word}', '${w.language}')" style="margin-top: 0.75rem;">
+                        + Validate
+                    </button>
+                </div>
+            `).join('');
+        } catch (e) {
+            console.error('Error loading OOV:', e);
+        }
+    }
+
+    async function addToVocab(word, lang) {
+        await fetch(`/api/validate_word_manual?word=${word}&lang=${lang}`);
+        loadOOV();
+        loadVocabulary();
+    }
+
+    function startLearningLoop() {
+        fetchNewWords();
+        learnLoopInterval = setInterval(fetchNewWords, 3000);
+        document.getElementById('learn-toggle-btn').textContent = "Pause";
+    }
+
+    function stopLearningLoop() {
+        clearInterval(learnLoopInterval);
+        learnLoopInterval = null;
+    }
+
+    function toggleLearningLoop() {
+        if (learnLoopInterval) {
+            stopLearningLoop();
+            document.getElementById('learn-toggle-btn').textContent = "Resume";
+        } else {
+            startLearningLoop();
+        }
+    }
+
+    function restartLearning() {
+        document.getElementById('learn-grid').innerHTML = '<p>Refreshing...</p>';
+        stopLearningLoop();
+        startLearningLoop();
+    }
+
+    async function fetchNewWords() {
+        const lang = document.getElementById('learn-lang-select').value;
+        try {
+            const res = await fetch(`/api/auto_generate_vocab?lang=${lang}&count=5`);
+            const words = await res.json();
+            
+            document.getElementById('learn-grid').innerHTML = words.map(w => `
+                <div class="word-card" style="border-top: 3px solid #3b82f6;">
+                    <h3 class="word-title">${w.word}</h3>
+                    <p class="word-meaning">${formatMeaning(w.meaning)}</p>
+                </div>
+            `).join('');
+        } catch (e) {
+            console.error('Error fetching words:', e);
+        }
+    }
+
+    function formatMeaning(m) {
+        if (!m) return 'Loading definition...';
+        return m.split('|')[0];
+    }
+
+    document.getElementById('my-vocab-search').addEventListener('input', renderMyVocab);
+</script>
+{% endblock %}

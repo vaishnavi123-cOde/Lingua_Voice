@@ -1,0 +1,317 @@
+:root {
+    --bg-body: #090B16;
+    --bg-surface: #0F172A;
+    --bg-surface-soft: #151E34;
+    --text-high: #E2E8F0;
+    --text-medium: #94A3B8;
+    --text-muted: #CBD5E1;
+    --primary: #6366F1;
+    --primary-strong: #4F46E5;
+    --primary-soft: #EEF2FF;
+    --success: #34D399;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --border: #1E293B;
+    --border-soft: #334155;
+    --shadow: 0 16px 40px rgba(15, 23, 42, 0.35);
+    --radius-sm: 0.5rem;
+    --radius-md: 1rem;
+    --radius-lg: 1.5rem;
+    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: var(--font-body);
+    background: radial-gradient(circle at 20% 10%, rgba(99,102,241,0.12), transparent 30%),
+                linear-gradient(180deg, #0D111C, #090B16 65%, #020408 100%);
+    color: var(--text-high);
+}
+
+a { colo:root {
+    --bg-body: #090B16;
+    --bg-surface: #0F172A;
+    --bg-surface-soft: #151E34;
+    ut    -- d    --bg-surface: #0F1-t    --bg-surface-soft: #1r;    --text-high: #E2E8F0;
+    de    --text-medium: #94A3ne    --text-muted: #CBD5E1;7,    --primary: #6366F1;
+ (-    --primary-strong: r-    --primary-soft: #EEborder-s    --success: : 260px;
+    p    --warning: #F59E0Bop    --danger: #EF4444h;
+    --boray: flex;
+        --border-soft: #3n;    --shadow: 0 16px 40px in    --radius-sm: 0.5rem;
+    --radius-md: 1rem;
+(-    --radius-md: 1rem;
+ {    --radius-lg: 1.5r-i    --font-body: 'Interre    --font-display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+0%}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    t-wei
+body {
+    margin: 0;
+    f.02    }
+
+    font-fami{     background: radial-gradient(cle                linear-gradient(180deg, #0D111C, #090B16 65%, #020408 100%);
+    color: vaiz    color: var(--text-high);
+}
+
+a { colo:root {
+    --bg-body: #090B16;
+   iu}
+
+a { colo:root {    display: f    --bg-body:-i    - center;
+    paddin    --bg-surface-soft: #1rd    ut    -- d    --bg-surface;
+    de    --text-medium: #94A3ne    --text-muted: #CBD5E1;7,    --primary: #6366F1;
+ (-  it (-    --primary-strong: r-    --primary-soft: #EEborder-s    --success: : 260px;
+ {    p    --warning: #F59E0Bop    --danger: #EF4444h;
+    --boray: flex;
+        x)    --boray: flex;
+        --border-soft: #3n;    -0.        --border-f;    --radius-md: 1rem;
+(-    --radius-md: 1rem;
+ {    --radius-lg: 1.5r-i    -; (-    --radius-md: 1r
+. {    --radius-lg: 1.5r-t0%}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    t-wei
+body {
+    margin: 0;
+    f.02    }
+
+    fn-
+* { 
+body {
+    margin: 0;
+    tt-s    m0.    t-wei
+bodaibody {
+ t     mding: 0; }
+.topba
+    font-fa 1.    color: vaiz    color: var(--text-high);
+}
+
+a { colo:root {
+    --bg-body: #090B16;
+   iu}
+
+a { colo:root {    display: f rd}
+
+a { colo:root {
+    --bg-body: #090B16;size:    --bg-body:-w   iu}
+
+a { colo:root t:
+a {  }
+    paddin    --bg-surface-soft: #1rd    ut    -- d    --di    de    --text-medium: #94A3ne    -x; align-items: center; gap: 0.7 (-  it (-    --primary-strong: r-    --primary-soft: #EEborder-s    --success: : d: {    p    --warning: #F59E0Bop    --danger: #EF4444h;
+    --boray: flex;
+        x)   iu    --boray: flex;
+        x)    --boray: flex;
+     1.        x)    --bis        --border-soft: #3n;em(-    --radius-md: 1rem;
+ {    --radius-lg: 1.5r-i    -; (-    --radius-mdid {    --radiuspadding: 0.. {    --radius-lg: 1.5r-t0%}
+
+* { box-sizing: bordean
+* { box-sizing: border-ap: 0.5
+body {
+    margin: 0;
+    toun   var(    t-wei
+bodolbody {
+ e;    mer    f.02    }-p
+    fn-
+* {g);* { 
+bn-bodma    mve    tt-s    mribodaibody {
+ t     mdinm: t     ateY(.topba
+    font-fon     { }
+
+a { colo:root {
+    --bg-body: #090B16;
+   iu}
+
+a { cer-co    --ar(--borde   iu}
+
+a { colo:root ar
+a { er 
+a { colo:root {
+    --bg-body: .30    --bg-body:t 
+a { colo:root t:
+a {  }
+    paddin    --bg-surfaum); border: none; }    p-g    --boray: flex;
+        x)   iu    --boray: flex;
+        x)    --boray: flex;
+     1.        x)    --bis        --border-soft: #3n;em(-    --radius-md: 1rem;
+ {    --radius-lg: 1.5r-i    -; (-    --radius-mdid {    --radiuspadding: 0.. {    --radius-lg: -medium);        x)   iu   m        x)    --boray: flex;
+   be     1.        x)    --bis ig {    --radius-lg: 1.5r-i    -; (-    --radius-mdid {    --radiuspadding: 0.. : 
+* { box-sizing: bordean
+* { box-sizing: border-ap: 0.5
+body {
+    margin: 0;
+    toun   var(    t-wei
+bvar* { box-sizing: border vbody {
+    margin: 0;
+    toure    m.f    tnput:focusbodolbody {
+ e;    mer r- e;    mer(-    fn-
+* {g);* { 
+bn-bo 0* {g)x rbn-bodma 2, t     mdinm: t     ateY(.topba
+    font 0    font-fon     { }
+
+a { colofl
+a { colo:root {
+  ab-    --bg-bing: 0   iu}
+
+a { cer-co    un
+a { ba(
+a { colo84,0.1); border: 1px solia { er 
+a { colsoa { coor  r-radius: 0.75a { colo:root t:
+a {  }
+    paddiona {  }
+    paddcu    p p        x)   iu    --boray: flex;
+        x)    --boray: flex;
+     pr        x)    --boray: flex;
+   or     1.        x)    --bis -g {    --radius-lg: 1.5r-i    -; (-    --radius-mdid {    --radiuspadding: 0.. ))   be     1.        x)    --bis ig {    --radius-lg: 1.5r-i    -; (-    --radius-mdid {    --radiuspadding: 0.. : 
+* { box-sizing: bordean
+* { box-sizi.s* { box-sizing: bordean
+* { box-sizing: border-ap: 0.5
+body {
+    margin: 0;
+    toun   var(    t-wei
+bvar* { box; * { box-sizing: border; body {
+    margin: 0;
+    tourg    mtt    toun   va
+.bvar* { box-sizing: bor 2    margin: 0;
+    toure    m.f  ar    toure    ;  e;    mer r- e;    mer(-    fn-
+* {g);* fo* {g);* { 
+bn-bo 0* {g)x rbn-bo-sbn-bo 0* }
+
+.activity-feed { background: var(--bg-surface); border: 1
+a { colofl
+a { colo:root {
+ bora { colous:  ab-    --bg-md
+a { cer-co    un
+a { ba(
+ivia { ba(
+a { colaya { cx; a { colsoa { coor  r-radius: 0.75a { cooma {  }
+    paddiona {  }
+    paddcu    p p      :l    phi    paddcu    p om        x)    ivity-icon-wrap { width: 48px; height     pr        x)    --boragr   or     1.        x)    --bis -g, * { box-sizing: bordean
+* { box-sizi.s* { box-sizing: bordean
+* { box-sizing: border-ap: 0.5
+body {
+    margin: 0;
+    toun   var(    t-wei
+bvar* { box; * { box-sizing: border; body {
+    margin: 0;
+    tourg    mtt    toun   vh)* { box--bottom: 0.25rem* { box-sizing: border-ap: 0.5
+body 5rbody {
+    margin: 0;
+    tou;     tra    toun   vantbvar* { box; * { box-sigr    margin: 0;
+    tourg    mtt    toun   
+.    tourg    ba.bvar* { box-sizing: bor 2   b    toure    m.f  ar    toure    ;  e; : * {g);* fo* {g);* { 
+bn-bo 0* {g)x rbn-bo-sbn-bo 0* }
+
+.activity-f dbn-bo 0* {g)x rbn-b1r
+.activity-feed { background: vrapa { colofl
+a { colo:root {
+ bora { colous:  ab-    --bg-d:a { colo:-s bora { colousr:a { cer-co    un
+a { ba(
+ivia  ba { ba(
+ivia { .7ivia {coa { colay--    paddiona {  }
+    paddcu    p p      :l    phi    paddcu   l     paddcu    p n:* { box-sizi.s* { box-sizing: bordean
+* { box-sizing: border-ap: 0.5
+body {
+    margin: 0;
+    toun   var(    t-wei
+bvar* { box; * { box-sizing: border; body {
+    margin: 0;
+    tourg    ga* { rem; margin-bottom: 2rem; }
+.mic-bbody {
+    margin: 0;
+    toure    mck    toun   var-bvar* { box; * { box-sisu    margin: 0;
+    tourg    mtt    toun   ne    tourg    usbody 5rbody {
+    margin: 0;
+    tou;     tra    toun   vantbvar* { box; * { box-sin-    m: center;    tou;     en    tourg    mtt    toun   
+.    tourg   0.3s; }
+.mic-button:hover { tr.    tourg    ba.bvar* { b bbn-bo 0* {g)x rbn-bo-sbn-bo 0* }
+
+.activity-f dbn-bo 0* {g)x rbn-b1r
+.activity-feed { background: vrapa { eg
+.activity-f dbn-bo 0* {g)x rbnati.activity-feed { background: vrapesa { colo:root {
+ bora { colous:  ab-    --ac bora { colous.ta { ba(
+ivia  ba { ba(
+ivia { .7ivia {coa { colay--    paddiona {  }
+    (-ivia  r-ivia { .7ivia-r    s: 0.75rem; padding: 1.5rem; min-height: 3* { box-sizing: border-ap: 0.5
+body {
+    margin: 0;
+    toun   var(    t-wei
+bvar* { box; * { box-sihibody {
+    margin: 0;
+    toute    me:    toun   vardbvar* { box; * { box-siid    margin: 0;
+    tourg    ga* { rem; mar:     tourg    1..mic-bbody {
+    margin: 0;
+    toure    mck rf    margin:r-    us: var(--r    tourg    mtt    toun   ne    tourg    usbody 5rbody {
+    margin:st    margin: 0;
+    tou;     tra    toun   vantbvar* { bo a    tou;     en.    tourg   0.3s; }
+.mic-button:hover { tr.    tourg    ba.bvar* { b bbn-bo 0* {g)x rbn-bo-sbn-bo 0* }
+
+.activno.mic-button:hover { c
+.activity-f dbn-bo 0* {g)x rbn-b1r
+.activity-feed { background: vrapa { eg
+.acti co.activity-feed { background: vrap 1.activity-f dbn-bo 0* {g)x rbnati.actund bora { colous:  ab-    --ac bora { colous.ta { ba(
+ivia  ba { ba(
+ivia { .7ivia { sivia  ba { ba(
+ivia { .7ivia {coa { colay--    pad: ivia { .7iviaun    (-ivia  r-ivia { .7ivia-r    s: 0.75rem;5rbody {
+    margin: 0;
+    toun   var(    t-wei
+bvar* { box; * { box-sihibody {
+    margin: 0;
+    toute 1e    m }    toun   vae bvar* {size: 0.875rem; co    margin: 0;
+    toute    mess    toute     f    tourg    ga* { rem; mar:     tourg    1..mic-bbody {
+    margin: rf    margin: 0;
+    toure    mck rf    margin:r-    us: ap    toure    ri    margin:st    margin: 0;
+    tou;     tra    toun   vantbvar* { bo a    tou;     en.    tourg   0.3sar    tou;     tra    toun  ur.mic-button:hover { tr.    tourg    ba.bvar* { b bbn-bo 0* {g)x rbn-bo-sbn-bor(
+.activno.mic-button:hover { c
+.activity-f dbn-bo 0* {g)x rbn-b1r
+.activity-feed -4p.activity-f dbn-bo 0* {g)x r);.activity-feed { background: vrap.w.acti co.activity-feed { background: vntivia  ba { ba(
+ivia { .7ivia { sivia  ba { ba(
+ivia { .7ivia {coa { colay--    pad: ivia { .7iviaun    (-ivia  r-ivia { .7ivia-r    sexivia { .7iviaorivia { .7ivia {coa { colay--  ex    margin: 0;
+    toun   var(    t-wei
+bvar* { box; * { box-sihibody {
+    margin: 0;
+    toute 1e     0   75rem; colorbvar* { box; * { box-siin    margin: 0;
+    toute 1e   1r    toute 1e oo    toute    mess    toute     f    tourg    ga* { rem; mar:     tourg  nt    margin: rf    margin: 0;
+    toure    mck rf    margin:r-    us: ap    toure    ri n:    toure    mck rf    marg b    tou;     tra    toun   vantbvar* { bo a    tou;     en.    tourg   0.3sar    ton-.activno.mic-button:hover { c
+.activity-f dbn-bo 0* {g)x rbn-b1r
+.activity-feed -4p.activity-f dbn-bo 0* {g)x r);.activity-feed { background: vrap.w.acti co.activity-feed { background}
+.activity-f dbn-bo 0* {g)x r; .activity-feed -4p.activity-f dbn);ivia { .7ivia { sivia  ba { ba(
+ivia { .7ivia {coa { colay--    pad: ivia { .7iviaun    (-ivia  r-ivia { .7ivia-r    sexivia { .7iviaoriptivia { .7ivia {coa { colay--  --    toun   var(    t-wei
+bvar* { box; * { box-sihibody {
+    margin: 0;
+    toute 1e     0   75rem; colorbvar* { box; * { box-siin    margin: r-chat {bvar* { box; * { box-sirf    margin: 0;
+    toute 1e   em    toute 1e sa    toute 1e   1r    toute 1e oo    toute    mess    toute     f    touge    toure    mck rf    margin:r-    us: ap    toure    ri n:    toure    mck rf    marg b    tou;     tra    toun   vantbvar* { bo a sa.activity-f dbn-bo 0* {g)x rbn-b1r
+.activity-feed -4p.activity-f dbn-bo 0* {g)x r);.activity-feed { background: vrap.w.acti co.activity-feed { background}
+.activity-f dbn-bo 0* {g)x r; .activity-feed -4te.activity-feed -4p.activity-f dbnmi.activity-f dbn-bo 0* {g)x r; .activity-feed -4p.activity-f dbn);ivia { .7ivia { sivia  ba { ba(
+ivia { .7ivia {coa { orivia { .7ivia {coa { colay--    pad: ivia { .7iviaun    (-ivia  r-ivia { .7ivia-r    sexivia { elbvar* { box; * { box-sihibody {
+    margin: 0;
+    toute 1e     0   75rem; colorbvar* { box; * { box-siin    margin: r-chat {bvar* { box; * { box-sirf    margin:fo    margin: 0;
+    toute 1e   ex    toute 1e in    toute 1e   em    toute 1e sa    toute 1e   1r    toute 1e oo    toute    mess    toute     f    touge    toure  id.activity-feed -4p.activity-f dbn-bo 0* {g)x r);.activity-feed { background: vrap.w.acti co.activity-feed { background}
+.activity-f dbn-bo 0* {g)x r; .activity-feed -4te.activity-feed -4p.activity-f dbnmi.activity-f dbn-bo 0* {g)x r; .activity-feed -4p.activity-f dbn);iviar-.activity-f dbn-bo 0* {g)x r; .activity-feed -4te.activity-feed -4p.activity-f dbnmi.activity-f dbn-bo 0* {g)x r; .asurfivia { .7ivia {coa { orivia { .7ivia {coa { colay--    pad: ivia { .7iviaun    (-ivia  r-ivia { .7ivia-r    sexivia { elbvar* { box; * { box-sihibody {
+    margin: 0;
+    toute 1ets    margin: 0;
+    toute 1e     0   75rem; colorbvar* { box; * { box-siin    margin: r-chat {bvar* { box; * { box-sirf    margin:fo    margin: 0;
+    dd    toute 1e }
+    toute 1e   ex    toute 1e in    toute 1e   em    toute 1e sa    toute 1e   1r    toute 1e oo    toute    mess    toute     f ac.activity-f dbn-bo 0* {g)x r; .activity-feed -4te.activity-feed -4p.activity-f dbnmi.activity-f dbn-bo 0* {g)x r; .activity-feed -4p.activity-f dbn);iviar-.activity-f dbn-bo 0* {g)x r; .activity-feed -4te.activity-feed -4p.activity-f dbnmi.activity-f dbn-bo 0* {g)x r;lo    margin: 0;
+    toute 1ets    margin: 0;
+    toute 1e     0   75rem; colorbvar* { box; * { box-siin    margin: r-chat {bvar* { box; * { box-sirf    margin:fo    margin: 0;
+    dd    toute 1e }
+    toute 1e   ex    toute 1e in    toute 1e   em    toute 1e sa    toute 1e   1r    toute 1e oo    toute    mess    toute     f ac.activity-f dbn-bo 0* {g)x r; .activity-feed -4te.activity-feed -4p.activity-f dbnmi.activity-f dbda    to }
+
+@medi    toute 1e     0   75rem; .    dd    toute 1e }
+    toute 1e   ex    toute 1e in    toute 1e   em    toute 1e sa    toute 1e   1r    toute 1e oo    toute   dd    toute 1e   ex        toute 1ets    margin: 0;
+    toute 1e     0   75rem; colorbvar* { box; * { box-siin    margin: r-chat {bvar* { box; * { box-sirf    margin:fo    margin: 0;
+    dd    toute 1e }
+    toute 1e   ex    toute 1e in    toute 1e   em    toute 1e sa    toute 1e   1r    toute 1e oo    toute    mess    toute     f ac.activity-f dbn-bo 0* {g)x r; .activity-feed -4te.activity-feed -4p.activity-f dbnmi.activity-f dbda  id    toute 1e     0   75rem;      dd    toute 1e }
+    toute 1e   ex    toute 1e in    toute 1e   em    toute 1e sa    toute 1e   1r    toute 1e oo    toute   ol    toute 1e   ex  as
+@medi    toute 1e     0   75rem; .    dd    toute 1e }
+    toute 1e   ex    toute 1e in    toute 1e   em    toute 1e sa    toute 1e   1r    toute 1e oo    toute   dd    toute 1e   ex        toute 1ets    margin: 0;
+    toute 1e     0   7w:     toute 1e   ex    toute 1e in    toute 1e   em    ni    toute 1e     0   75rem; colorbvar* { box; * { box-siin    margin: r-chat {bvar* { box; * { box-sirf    margin:fo    slateX(0); opacity: 1; } }

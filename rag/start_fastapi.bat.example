@@ -1,0 +1,30 @@
+@echo off
+title FastAPI SQL RAG Server
+cd /d "%~dp0"
+echo ============================================
+echo  SQL Lecture Assistant - FastAPI Server
+echo ============================================
+echo.
+echo [1/4] Checking Python...
+where python >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Python not found in PATH.
+    pause
+    exit /b 1
+)
+echo OK
+echo.
+echo [2/4] Installing dependencies (if needed)...
+pip install -r requirements.txt --quiet
+echo.
+echo [3/4] Starting FastAPI on port 8001...
+echo.
+echo (App package version - recommended)
+echo.
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo Fallback: Trying standalone main.py...
+    python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+)
+pause

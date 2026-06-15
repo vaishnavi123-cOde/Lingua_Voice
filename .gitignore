@@ -1,0 +1,71 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# --- Virtual Environments ---
+.venv/
+.venv_win/
+venv/
+env/
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Build artifacts ---
+*.tsbuildinfo
+
+# --- LMS Data ---
+linguavoice.db
+audio_clips/
+*.wav
+*.mp3
+
+# --- Vosk Models (download separately) ---
+vosk-model-*/
+models/
+
+# --- RAG / Vector DB ---
+qdrant_db/
+*.npy
+*.pkl
+response.mp3
+test_speak.mp3
+test_us.mp3
+
+# --- RAG Data (generated) ---
+slide_texts/
+slides/
+unique_slides/
+transcripts/
+combined_docs/
+audio_cache/
+logs/
+
+# --- RAG Frontend ---
+node_modules/
+.next/
+package-lock.json
+
+# --- Secrets ---
+.env
+.env.local
+*.key
+
+# --- Docker ---
+.dockerignore
+
+# --- Temp ---
+*.log
+*.tmp
+scratch/

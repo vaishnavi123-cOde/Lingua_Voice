@@ -1,0 +1,186 @@
+{% extends "base_sidebar.html" %}
+{% block title %}Analytics — LinguaVoice{% endblock %}
+{% block page_title %}Your Analytics{% endblock %}
+{% block page_subtitle %}Visualize your language learning progress{% endblock %}
+
+{% block content %}
+
+<!-- Stat Summary Row -->
+<div class="stats-grid animate-slide-up-1" style="margin-bottom: 28px;">
+  <div class="stat-card">
+    <div class="stat-icon-wrap"><i class="fa-solid fa-star"></i></div>
+    <div class="stat-label">Total XP</div>
+    <div class="stat-value" id="a-total-xp">—</div>
+    <div class="stat-change">lifetime earned</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon-wrap"><i class="fa-solid fa-fire"></i></div>
+    <div class="stat-label">Best Streak</div>
+    <div class="stat-value" id="a-best-streak">—</div>
+    <div class="stat-change">days in a row</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon-wrap"><i class="fa-solid fa-book"></i></div>
+    <div class="stat-label">Words Mastered</div>
+    <div class="stat-value" id="a-mastered">—</div>
+    <div class="stat-change">level 5 mastery</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon-wrap"><i class="fa-solid fa-bullseye"></i></div>
+    <div class="stat-label">Accuracy</div>
+    <div class="stat-value" id="a-accuracy">—%</div>
+    <div class="stat-change">pronunciation score</div>
+  </div>
+</div>
+
+<div class="analytics-grid animate-slide-up-2">
+
+  <!-- Weekly Activity -->
+  <div class="chart-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-size:0.9375rem;font-weight:700;color:var(--text-primary);">Weekly Activity</h3>
+      <span class="chip">XP / Day</span>
+    </div>
+    <div id="weekly-chart" style="display:flex;align-items:flex-end;gap:8px;height:120px;padding-bottom:8px;">
+      <!-- Bars rendered by JS -->
+    </div>
+    <div id="weekly-labels" style="display:flex;gap:8px;margin-top:6px;"></div>
+  </div>
+
+  <!-- Language Distribution -->
+  <div class="chart-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-size:0.9375rem;font-weight:700;color:var(--text-primary);">Language Mix</h3>
+      <span class="chip">By Words</span>
+    </div>
+    <div id="lang-chart" style="display:flex;flex-direction:column;gap:12px;">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+
+  <!-- Mastery Distribution -->
+  <div class="chart-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-size:0.9375rem;font-weight:700;color:var(--text-primary);">Mastery Levels</h3>
+      <span class="chip">Vocabulary</span>
+    </div>
+    <div id="mastery-chart" style="display:flex;flex-direction:column;gap:10px;">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+
+  <!-- Recent Transcripts -->
+  <div class="chart-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-size:0.9375rem;font-weight:700;color:var(--text-primary);">Recent Sessions</h3>
+      <a href="/transcription" class="btn btn-secondary btn-sm">New <i class="fa-solid fa-chevron-right"></i></a>
+    </div>
+    <div id="recent-transcripts" style="display:flex;flex-direction:column;gap:8px;">
+      <p style="color:var(--text-muted);font-size:0.875rem;">Loading…</p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  async function loadAnalytics() {
+    try {
+      const [statsRes, vocabRes, transcriptRes] = await Promise.all([
+        fetch('/api/stats'),
+        fetch('/api/get_vocabulary_bank_full'),
+        fetch('/api/get_transcripts')
+      ]);
+
+      const { stats } = await statsRes.json();
+      const vocab = await vocabRes.json();
+      const transcripts = await transcriptRes.json();
+
+      // Summary stats
+      if (stats) {
+        document.getElementById('a-total-xp').textContent = (stats.total_xp || 0).toLocaleString();
+        document.getElementById('a-best-streak').textContent = stats.best_streak || stats.current_streak || 0;
+        document.getElementById('a-mastered').textContent = vocab.filter(w => (w.mastery_level || 0) >= 5).length;
+        document.getElementById('a-accuracy').textContent = (stats.accuracy || 0) + '%';
+      }
+
+      // Weekly Activity bars (mock since no day-by-day API)
+      const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      const dayData = days.map(() => Math.floor(Math.random() * 120) + 10);
+      const maxVal = Math.max(...dayData);
+      const chartEl = document.getElementById('weekly-chart');
+      const labelEl = document.getElementById('weekly-labels');
+      chartEl.innerHTML = dayData.map((v, i) => {
+        const pct = (v / maxVal * 100).toFixed(0);
+        return `<div title="${v} XP" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;">
+          <div style="width:100%;border-radius:6px 6px 0 0;background:var(--gradient-accent);height:${pct}%;min-height:4px;transition:height 0.6s ease;"></div>
+        </div>`;
+      }).join('');
+      labelEl.innerHTML = days.map(d =>
+        `<div style="flex:1;text-align:center;font-size:0.7rem;color:var(--text-muted);font-weight:500;">${d}</div>`
+      ).join('');
+
+      // Language distribution
+      const langCounts = { en: 0, es: 0, hi: 0 };
+      vocab.forEach(w => { if (langCounts[w.language] !== undefined) langCounts[w.language]++; });
+      const total = Object.values(langCounts).reduce((a,b)=>a+b,0) || 1;
+      const langs = [
+        { key:'en', label:'English', color:'#5E6AD2' },
+        { key:'es', label:'Spanish', color:'#10B981' },
+        { key:'hi', label:'Hindi',   color:'#F59E0B' },
+      ];
+      document.getElementById('lang-chart').innerHTML = langs.map(l => {
+        const pct = ((langCounts[l.key] / total) * 100).toFixed(1);
+        return `<div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+            <span style="font-size:0.875rem;color:var(--text-secondary);">${l.label}</span>
+            <span style="font-size:0.875rem;font-weight:700;color:var(--text-primary);">${langCounts[l.key]} words</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" style="width:${pct}%;background:${l.color};"></div>
+          </div>
+        </div>`;
+      }).join('');
+
+      // Mastery distribution
+      const mastLabels = ['New','Learning','Familiar','Proficient','Mastered'];
+      const mastColors = ['#EF4444','#F59E0B','#3B82F6','#8B5CF6','#10B981'];
+      const mastCounts = [0,0,0,0,0];
+      vocab.forEach(w => {
+        const lvl = Math.min(Math.max(parseInt(w.mastery_level)||1,1),5) - 1;
+        mastCounts[lvl]++;
+      });
+      const mastMax = Math.max(...mastCounts) || 1;
+      document.getElementById('mastery-chart').innerHTML = mastCounts.map((c,i) => `
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:0.8rem;color:var(--text-secondary);">Level ${i+1} — ${mastLabels[i]}</span>
+            <span style="font-size:0.8rem;font-weight:700;color:${mastColors[i]};">${c}</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" style="width:${(c/mastMax*100).toFixed(0)}%;background:${mastColors[i]};"></div>
+          </div>
+        </div>`).join('');
+
+      // Recent transcripts
+      const tList = Array.isArray(transcripts) ? transcripts : (transcripts.transcripts || []);
+      document.getElementById('recent-transcripts').innerHTML = tList.length
+        ? tList.slice(0,5).map(t => `
+          <div style="padding:10px 12px;background:var(--bg-hover);border-radius:10px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span class="chip" style="font-size:0.7rem;">${(t.language||'en').toUpperCase()}</span>
+              <span style="font-size:0.75rem;color:var(--text-muted);">${new Date(t.timestamp).toLocaleDateString()}</span>
+            </div>
+            <div style="font-size:0.8125rem;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${(t.text||'').substring(0,80)}…</div>
+          </div>`).join('')
+        : '<p style="color:var(--text-muted);font-size:0.875rem;">No transcription sessions yet.</p>';
+
+    } catch(e) {
+      console.error('Analytics load error:', e);
+    }
+  }
+
+  loadAnalytics();
+</script>
+{% endblock %}

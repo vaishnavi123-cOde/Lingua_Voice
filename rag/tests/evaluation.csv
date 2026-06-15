@@ -1,0 +1,38 @@
+category,question,expected_contains,retrieval_score,answer_quality,notes
+sql_basics,What is SQL Server?,relational database management system,,,,RDBMS concept
+sql_basics,What does SQL stand for?,Structured Query Language,,,,SEQUEL vs SQL
+sql_basics,Who developed SQL Server?,Microsoft,,,,Common knowledge
+sql_basics,What is a primary key?,unique identifier,,,,Core concept
+sql_basics,What is a foreign key?,references,,,,Relationship concept
+sql_ddl,How to create a table in SQL?,CREATE TABLE,,,,DDL command
+sql_ddl,What is the difference between DDL and DML?,Data Definition Language,,,,DDL vs DML distinction
+sql_ddl,What is a CHECK constraint?,condition,,,,Validation concept
+sql_ddl,What is a DEFAULT constraint?,default value,,,,Default value concept
+sql_ddl,What is a UNIQUE constraint?,unique,,,,Uniqueness concept
+sql_ddl,What is an IDENTITY column?,auto-increment,,,,Auto-increment concept
+sql_dml,How to write a SELECT query?,SELECT,,,,Basic query
+sql_dml,How to filter data with WHERE?,WHERE,,,,Filtering concept
+sql_dml,How to sort data with ORDER BY?,ORDER BY,,,,Sorting concept
+sql_dml,What is NULL in SQL?,unknown,,,,NULL concept
+sql_dml,How to use AND and OR operators?,AND,,,,Logical operators
+sql_normalization,What is normalization?,redundancy,,,,Normalization purpose
+sql_normalization,What is a join?,combine,,,,Join concept
+sql_relationships,How do foreign keys work?,REFERENCES,,,,FK constraint
+sql_relationships,What is CASCADE delete?,CASCADE,,,,Cascade concept
+sql_relationships,What is SET NULL?,SET NULL,,,,Set null concept
+sql_admin,What is SQL Server Management Studio?,SSMS,,,,SSMS tool
+sql_admin,How to import data from Excel?,import,,,,Data import
+sql_admin,How to connect to SQL Server?,connect,,,,Connection concept
+sql_advanced,What is an ORDBMS?,object-relational,,,,ORDBMS concept
+sql_advanced,What is a database snapshot?,snapshot,,,,Snapshot concept
+sql_advanced,What is SQLCMD?,sqlcmd,,,,Command line tool
+out_of_scope,What is the weather today?,I could not find,,,,Should not answer
+out_of_scope,Who is the President of India?,I could not find,,,,Should not answer
+out_of_scope,What is Python used for?,I could not find,,,,Should not answer
+out_of_scope,Tell me a joke,I could not find,,,,Should not answer
+out_of_scope,What is the stock market doing?,I could not find,,,,Should not answer
+ocr_only,What slide content mentions SQL Server?,What is SQL Server,,,,OCR-extracted knowledge
+ocr_only,What does the SSMS connect dialog show?,Server Name,,,,SSMS UI knowledge
+ocr_only,What SQL files were visible in the File Explorer?,.sql,,,,SQL file references
+transcript_only,What was mentioned about SQL Server?,developed by Microsoft,,,,Transcript knowledge
+transcript_only,What video recording dates exist?,2026,,,,Recording dates

@@ -1,0 +1,180 @@
+/* Premium AI Voice Orb Animation */
+.hero-ai-anim-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  height: 500px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ai-orb-container {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: orb-float 6s ease-in-out infinite;
+}
+
+/* Central glowing core */
+.ai-core {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle at 30% 30%, #ffd085, #ffa500, #b37400);
+  border-radius: 50%;
+  box-shadow: 
+    0 0 40px rgba(255, 165, 0, 0.4),
+    inset 0 0 20px rgba(255, 255, 255, 0.8),
+    inset -20px -20px 40px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  animation: core-pulse 3s ease-in-out infinite alternate;
+}
+
+/* Glowing rings */
+.ai-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-sizing: border-box;
+}
+
+.ring-1 {
+  width: 220px;
+  height: 220px;
+  border-top-color: rgba(255, 165, 0, 0.8);
+  border-bottom-color: rgba(255, 165, 0, 0.4);
+  animation: ring-spin-1 8s linear infinite;
+  z-index: 5;
+  filter: drop-shadow(0 0 10px rgba(255, 165, 0, 0.5));
+}
+
+.ring-2 {
+  width: 300px;
+  height: 300px;
+  border-left-color: rgba(255, 190, 77, 0.6);
+  border-right-color: rgba(255, 165, 0, 0.3);
+  animation: ring-spin-2 12s linear infinite reverse;
+  z-index: 4;
+}
+
+.ring-3 {
+  width: 380px;
+  height: 380px;
+  border-top-color: rgba(255, 165, 0, 0.2);
+  border-bottom-color: rgba(255, 165, 0, 0.1);
+  border-left-color: rgba(255, 165, 0, 0.4);
+  background: radial-gradient(circle, rgba(255, 165, 0, 0.05) 0%, transparent 60%);
+  animation: ring-spin-1 20s linear infinite;
+  z-index: 3;
+}
+
+/* Emulated Soundwaves interacting with the core */
+.ai-soundwaves {
+  position: absolute;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ai-soundwaves span {
+  display: block;
+  width: 8px;
+  height: 10px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  animation: wave-bounce 1s ease-in-out infinite;
+}
+
+.ai-soundwaves span:nth-child(1) { animation-delay: 0.0s; height: 15px; }
+.ai-soundwaves span:nth-child(2) { animation-delay: 0.1s; height: 30px; }
+.ai-soundwaves span:nth-child(3) { animation-delay: 0.2s; height: 45px; }
+.ai-soundwaves span:nth-child(4) { animation-delay: 0.3s; height: 50px; background: #fff5e6; }
+.ai-soundwaves span:nth-child(5) { animation-delay: 0.4s; height: 45px; }
+.ai-soundwaves span:nth-child(6) { animation-delay: 0.5s; height: 30px; }
+.ai-soundwaves span:nth-child(7) { animation-delay: 0.6s; height: 15px; }
+
+/* Animations */
+@keyframes orb-float {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-20px) scale(1.02); }
+}
+
+@keyframes core-pulse {
+  0% { transform: scale(0.95); filter: brightness(0.9); box-shadow: 0 0 30px rgba(255, 165, 0, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.5); }
+  100% { transform: scale(1.05); filter: brightness(1.2); box-shadow: 0 0 60px rgba(255, 165, 0, 0.6), inset 0 0 30px rgba(255, 255, 255, 0.9); }
+}
+
+@keyframes ring-spin-1 {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.05); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes ring-spin-2 {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes wave-bounce {
+  0%, 100% { transform: scaleY(0.5); opacity: 0.7; }
+  50% { transform: scaleY(1.2); opacity: 1; }
+}
+
+/* Orbiting particles */
+.orb-particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #ffb84d;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ffa500;
+  z-index: 20;
+}
+
+.particle-1 {
+  animation: orbit-1 4s linear infinite;
+}
+
+.particle-2 {
+  animation: orbit-2 5s linear infinite;
+  width: 4px; height: 4px; background: #fff;
+}
+
+.particle-3 {
+  animation: orbit-3 6s linear infinite reverse;
+  width: 8px; height: 8px;
+}
+
+/* AI Eagle Mascot Avatar */
+.ai-avatar-img {
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  border-radius: 20px;
+  animation: orb-float 6s ease-in-out infinite;
+  object-fit: contain;
+  /* Perfect black match */
+  mix-blend-mode: screen; /* Or normal since it's true black #000 */
+}
+
+
+@keyframes orbit-1 {
+  0% { transform: rotate(0deg) translateX(110px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(110px) rotate(-360deg); }
+}
+@keyframes orbit-2 {
+  0% { transform: rotate(120deg) translateX(150px) rotate(0deg); }
+  100% { transform: rotate(480deg) translateX(150px) rotate(-360deg); }
+}
+@keyframes orbit-3 {
+  0% { transform: rotate(240deg) translateX(190px) rotate(0deg); }
+  100% { transform: rotate(600deg) translateX(190px) rotate(-360deg); }
+}

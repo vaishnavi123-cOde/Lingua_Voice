@@ -1,0 +1,273 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Transcription - LinguaVoice{% endblock %}
+{% block page_title %}Live Transcription <i class="fa-solid fa-microphone"></i>{% endblock %}
+{% block page_subtitle %}Practice your speaking with real-time transcription{% endblock %}
+
+{% block content %}
+<div class="transcription-container">
+    <!-- Main Panel -->
+    <div class="main-panel">
+        <!-- Language Selection -->
+        <style>
+            .lang-btn { color: #ffffff !important; }
+            .lang-btn.active { color: #ffffff !important; }
+        </style>
+        <div class="language-selector">
+            <button class="lang-btn active" onclick="setLanguage('en')">English</button>
+            <button class="lang-btn" onclick="setLanguage('es')">Spanish</button>
+            <button class="lang-btn" onclick="setLanguage('hi')">Hindi</button>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <button class="mic-button" id="mic-btn" onclick="toggleRecording()">
+                <span id="mic-icon"><i class="fa-solid fa-microphone"></i></span>
+                <span id="mic-text">Start Recording</span>
+            </button>
+        </div>
+
+        <!-- Transcript Display -->
+        <div class="transcript-box">
+            <div class="transcript-text" id="transcript-text">
+                Click "Start Recording" to begin transcription...
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button onclick="clearTranscript()" class="btn btn-secondary">Clear</button>
+            <button onclick="saveTranscript()" class="btn btn-primary">Save</button>
+        </div>
+    </div>
+
+    <!-- Sidebar Panel -->
+    <div class="sidebar-panel">
+        <!-- Session Stats -->
+        <div class="stats-card">
+            <h3 class="card-title">Session Stats</h3>
+            <div class="stat-item">
+                <span class="stat-label">Words</span>
+                <span class="stat-value" id="word-count">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Duration</span>
+                <span class="stat-value" id="duration">00:00</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Language</span>
+                <span class="stat-value" id="current-lang">English</span>
+            </div>
+        </div>
+
+        <!-- Recent Sessions -->
+        <div class="recent-sessions">
+            <h3 class="card-title">Recent Sessions</h3>
+            <div id="recent-list">
+                <p class="text-muted">No recent sessions</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let isRecording = false;
+    let currentLanguage = 'en';
+    let wordCount = 0;
+    let startTime = null;
+    let durationInterval = null;
+
+    async function setLanguage(lang) {
+        currentLanguage = lang;
+        document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+
+        const langNames = { en: 'English', es: 'Spanish', hi: 'Hindi' };
+        document.getElementById('current-lang').textContent = langNames[lang];
+
+        // Notify backend to switch language model
+        try {
+            await fetch('/api/set_language', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ language: lang })
+            });
+            console.log("Language switched to", lang);
+        } catch (e) {
+            console.error("Failed to switch language:", e);
+        }
+    }
+
+    function toggleRecording() {
+        const btn = document.getElementById('mic-btn');
+        const icon = document.getElementById('mic-icon');
+        const text = document.getElementById('mic-text');
+
+        if (!isRecording) {
+            // Start recording
+            startRecording();
+            btn.classList.add('recording');
+            icon.innerHTML = '<i class="fa-solid fa-stop"></i>';
+            text.textContent = 'Stop Recording';
+            isRecording = true;
+
+            startTime = Date.now();
+            updateDuration();
+            durationInterval = setInterval(updateDuration, 1000);
+        } else {
+            // Stop recording
+            stopRecording();
+            btn.classList.remove('recording');
+            icon.innerHTML = '<i class="fa-solid fa-microphone"></i>';
+            text.textContent = 'Start Recording';
+            isRecording = false;
+
+            clearInterval(durationInterval);
+        }
+    }
+
+    function updateDuration() {
+        if (!startTime) return;
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        document.getElementById('duration').textContent =
+            `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    async function startRecording() {
+        // Notify backend to set active user
+        try {
+            await fetch('/api/start_recording', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ language: currentLanguage })
+            });
+        } catch (e) {
+            console.error("Failed to start recording session:", e);
+        }
+
+        // Start polling for transcripts
+        window.isPolling = true;
+        pollTranscripts();
+
+        // Ensure backend listener is active (it's always active, but we can verify later)
+        console.log("Started polling for transcripts...");
+    }
+
+    function stopRecording() {
+        window.isPolling = false;
+        if (window.pollTimer) {
+            clearTimeout(window.pollTimer);
+        }
+    }
+
+    async function pollTranscripts() {
+        if (!window.isPolling) return;
+
+        try {
+            const response = await fetch('/api/get_live_transcripts');
+            const data = await response.json();
+
+            if (data.transcripts && data.transcripts.length > 0) {
+                // Get new transcripts we haven't seen yet
+                const newTranscripts = data.transcripts.filter(t => !window.seenTranscriptIds.has(t.id));
+
+                for (const t of newTranscripts) {
+                    window.seenTranscriptIds.add(t.id);
+                    appendTranscript(t.text);
+                }
+            }
+        } catch (e) {
+            console.error("Polling error:", e);
+        }
+
+        // Poll every 2 seconds
+        window.pollTimer = setTimeout(pollTranscripts, 2000);
+    }
+
+    // Initialize seen IDs set
+    window.seenTranscriptIds = new Set();
+
+    function appendTranscript(text) {
+        const transcriptBox = document.getElementById('transcript-text');
+        if (transcriptBox.textContent.includes('Click "Start Recording"')) {
+            transcriptBox.textContent = '';
+        }
+        transcriptBox.textContent += text + ' ';
+
+        // Update word count
+        wordCount = transcriptBox.textContent.trim().split(/\s+/).length;
+        document.getElementById('word-count').textContent = wordCount;
+    }
+
+    function clearTranscript() {
+        document.getElementById('transcript-text').textContent = 'Click "Start Recording" to begin transcription...';
+        wordCount = 0;
+        document.getElementById('word-count').textContent = '0';
+        document.getElementById('duration').textContent = '00:00';
+        window.seenTranscriptIds = new Set();
+    }
+
+    async function saveTranscript() {
+        const text = document.getElementById('transcript-text').textContent;
+        if (text.includes('Click "Start Recording"') || !text.trim()) {
+            alert('No transcript to save');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/save_transcript', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: text,
+                    language: currentLanguage,
+                    word_count: wordCount
+                })
+            });
+
+            if (response.ok) {
+                alert('Transcript saved successfully!');
+                loadRecentSessions();
+                clearTranscript();
+            }
+        } catch (error) {
+            console.error('Error saving transcript:', error);
+        }
+    }
+
+    async function loadRecentSessions() {
+        try {
+            const response = await fetch('/api/get_transcripts');
+            const data = await response.json();
+            const sessions = data.transcripts || [];
+
+            const container = document.getElementById('recent-list');
+            if (sessions.length === 0) {
+                container.innerHTML = '<p style="color: #6b7280; font-size: 0.9375rem;">No recent sessions</p>';
+                return;
+            }
+
+            container.innerHTML = sessions.slice(0, 5).map(session => `
+                <div class="session-item" onclick="loadSession(${session.id})">
+                    <div class="session-time">${new Date(session.timestamp).toLocaleString()}</div>
+                    <div class="session-preview">${session.text.substring(0, 50)}...</div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading sessions:', error);
+        }
+    }
+
+    function loadSession(id) {
+        // Load specific session (implement as needed)
+        console.log('Loading session', id);
+    }
+
+    // Load recent sessions on page load
+    loadRecentSessions();
+</script>
+{% endblock %}

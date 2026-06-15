@@ -1,0 +1,186 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Dashboard — LinguaVoice{% endblock %}
+{% block page_title %}Welcome back, {{ user_name }}! 👋{% endblock %}
+{% block page_subtitle %}Ready to continue your language journey?{% endblock %}
+
+{% block content %}
+
+<!-- ── Stats Grid ──────────────────────────────────────── -->
+<div class="stats-grid fade-up-1">
+  <div class="stat-card">
+    <div class="stat-icon">⭐</div>
+    <div class="stat-label">Total XP</div>
+    <div class="stat-value" id="total-xp">—</div>
+    <div class="stat-change">↗ +120 this week</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🔥</div>
+    <div class="stat-label">Day Streak</div>
+    <div class="stat-value" id="streak">—</div>
+    <div class="stat-change">Keep it up!</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">📚</div>
+    <div class="stat-label">Vocabulary</div>
+    <div class="stat-value" id="vocab-count">—</div>
+    <div class="stat-change">Words mastered</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">⏱️</div>
+    <div class="stat-label">Practice Time</div>
+    <div class="stat-value" id="time-spent">—</div>
+    <div class="stat-change">This week</div>
+  </div>
+</div>
+
+<!-- ── Two-column layout ───────────────────────────────── -->
+<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:24px;margin-bottom:32px;" id="dashboard-grid">
+
+  <!-- Quick Actions -->
+  <div class="fade-up-2">
+    <h2 class="section-title">Continue Learning</h2>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+
+      <a href="/transcription" class="action-card">
+        <div class="action-icon">🎙️</div>
+        <div>
+          <div class="action-title">Voice Transcription</div>
+          <div class="action-description">Practice speaking with real-time AI transcription</div>
+        </div>
+        <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:rgba(255,255,255,0.25);font-size:0.8rem;flex-shrink:0;"></i>
+      </a>
+
+      <a href="/ai_tutor" class="action-card">
+        <div class="action-icon">🤖</div>
+        <div>
+          <div class="action-title">AI Conversation</div>
+          <div class="action-description">Chat with your intelligent language coach</div>
+        </div>
+        <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:rgba(255,255,255,0.25);font-size:0.8rem;flex-shrink:0;"></i>
+      </a>
+
+      <a href="/vocabulary" class="action-card">
+        <div class="action-icon">📚</div>
+        <div>
+          <div class="action-title">Review Vocabulary</div>
+          <div class="action-description">Study your word bank with flashcards and quiz</div>
+        </div>
+        <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:rgba(255,255,255,0.25);font-size:0.8rem;flex-shrink:0;"></i>
+      </a>
+
+      <a href="/learning_path" class="action-card">
+        <div class="action-icon">🧭</div>
+        <div>
+          <div class="action-title">Learning Path</div>
+          <div class="action-description">Continue your structured 100-level journey</div>
+        </div>
+        <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:rgba(255,255,255,0.25);font-size:0.8rem;flex-shrink:0;"></i>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="fade-up-3">
+    <h2 class="section-title">Recent Activity</h2>
+    <div class="activity-feed" id="activity-feed">
+      <div class="activity-item">
+        <div class="activity-icon-wrap">🎙️</div>
+        <div class="activity-content">
+          <div class="activity-title">Transcription Session</div>
+          <div class="activity-time">30 mins ago · +60 XP</div>
+        </div>
+      </div>
+      <div class="activity-item">
+        <div class="activity-icon-wrap">📚</div>
+        <div class="activity-content">
+          <div class="activity-title">Learned 7 new words</div>
+          <div class="activity-time">2 hours ago · +35 XP</div>
+        </div>
+      </div>
+      <div class="activity-item">
+        <div class="activity-icon-wrap">🔥</div>
+        <div class="activity-content">
+          <div class="activity-title">Streak extended!</div>
+          <div class="activity-time">Today · +10 XP Bonus</div>
+        </div>
+      </div>
+      <div class="activity-item">
+        <div class="activity-icon-wrap">🤖</div>
+        <div class="activity-content">
+          <div class="activity-title">AI Tutor session</div>
+          <div class="activity-time">Yesterday · +45 XP</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Quick Access Tools ──────────────────────────────── -->
+<div class="fade-up-4">
+  <h2 class="section-title">Quick Tools</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+
+    <a href="/test" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;text-decoration:none;color:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,165,0,0.06)';this.style.borderColor='rgba(255,165,0,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.08)'">
+      <span style="font-size:1.6rem;">🧪</span>
+      <span style="font-size:0.85rem;font-weight:600;color:rgba(255,255,255,0.75);">Practice Test</span>
+    </a>
+
+    <a href="/notes" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;text-decoration:none;color:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,165,0,0.06)';this.style.borderColor='rgba(255,165,0,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.08)'">
+      <span style="font-size:1.6rem;">📝</span>
+      <span style="font-size:0.85rem;font-weight:600;color:rgba(255,255,255,0.75);">My Notes</span>
+    </a>
+
+    <a href="/analytics" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;text-decoration:none;color:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,165,0,0.06)';this.style.borderColor='rgba(255,165,0,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.08)'">
+      <span style="font-size:1.6rem;">📊</span>
+      <span style="font-size:0.85rem;font-weight:600;color:rgba(255,255,255,0.75);">Analytics</span>
+    </a>
+
+    <a href="/community" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;text-decoration:none;color:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,165,0,0.06)';this.style.borderColor='rgba(255,165,0,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.08)'">
+      <span style="font-size:1.6rem;">🌍</span>
+      <span style="font-size:0.85rem;font-weight:600;color:rgba(255,255,255,0.75);">Community</span>
+    </a>
+
+    <a href="/certificate" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;text-decoration:none;color:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,165,0,0.06)';this.style.borderColor='rgba(255,165,0,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.08)'">
+      <span style="font-size:1.6rem;">🏆</span>
+      <span style="font-size:0.85rem;font-weight:600;color:rgba(255,255,255,0.75);">Certificate</span>
+    </a>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load stats from API
+async function loadStats() {
+  try {
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+    const s = data.stats || {};
+    if (s.total_xp !== undefined) document.getElementById('total-xp').textContent = s.total_xp.toLocaleString();
+    if (s.streak_days !== undefined) document.getElementById('streak').textContent = s.streak_days;
+    if (s.words_learned !== undefined) document.getElementById('vocab-count').textContent = s.words_learned;
+    if (s.practice_hours !== undefined) document.getElementById('time-spent').textContent = s.practice_hours + 'h';
+  } catch(e) {
+    ['total-xp','streak','vocab-count','time-spent'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.textContent === '—') el.textContent = '–';
+    });
+  }
+}
+
+loadStats();
+
+// Responsive 2-col grid collapse
+const grid = document.getElementById('dashboard-grid');
+const mq = window.matchMedia('(max-width:900px)');
+function updateGrid(e) {
+  if (grid) grid.style.gridTemplateColumns = e.matches ? '1fr' : '1.4fr 1fr';
+}
+mq.addListener(updateGrid); updateGrid(mq);
+</script>
+{% endblock %}

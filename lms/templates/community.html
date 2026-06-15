@@ -1,0 +1,128 @@
+{% extends "base_sidebar.html" %}
+{% block title %}Community — LinguaVoice{% endblock %}
+{% block page_title %}Community{% endblock %}
+{% block page_subtitle %}Connect with fellow language learners worldwide{% endblock %}
+
+{% block content %}
+
+<div class="animate-slide-up-1" style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+
+  <!-- Left: Leaderboard + Feed -->
+  <div class="animate-slide-up-2" style="display:flex;flex-direction:column;gap:20px;">
+
+    <!-- Leaderboard -->
+    <div class="glass-card" style="padding:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h3 style="font-size:1rem;font-weight:700;color:var(--text-primary);"><i class="fa-solid fa-trophy"></i> Weekly Leaderboard</h3>
+        <span class="chip">This Week</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        {% set leaders = [
+          {'rank':1,'name':'Maria G.','lang':'Spanish','xp':2840,'avatar':'#5E6AD2,#7C3AED'},
+          {'rank':2,'name':'Rohan K.','lang':'Hindi','xp':2210,'avatar':'#06B6D4,#3B82F6'},
+          {'rank':3,'name':user_name,'lang':'English','xp':1890,'avatar':'#10B981,#059669','is_you':true},
+          {'rank':4,'name':'Liu W.','lang':'English','xp':1540,'avatar':'#F59E0B,#EF4444'},
+          {'rank':5,'name':'Ahmed S.','lang':'Spanish','xp':1230,'avatar':'#8B5CF6,#EC4899'},
+        ] %}
+        {% for l in leaders %}
+        <div style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:14px;{% if l.is_you is defined and l.is_you %}background:var(--accent-subtle);border:1px solid var(--border-accent);{% else %}background:var(--bg-hover);{% endif %}">
+          <div style="font-size:{% if l.rank == 1 %}1.25rem{% else %}0.9375rem{% endif %};font-weight:800;color:{% if l.rank == 1 %}#F59E0B{% elif l.rank == 2 %}#9CA3AF{% elif l.rank == 3 %}#CD7F32{% else %}var(--text-muted){% endif %};width:24px;text-align:center;">
+            {% if l.rank == 1 %}<i class="fa-solid fa-medal"></i>{% elif l.rank == 2 %}<i class="fa-solid fa-medal"></i>{% elif l.rank == 3 %}<i class="fa-solid fa-medal"></i>{% else %}{{ l.rank }}{% endif %}
+          </div>
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,{{ l.avatar }});display:flex;align-items:center;justify-content:center;font-size:0.9375rem;font-weight:700;color:white;flex-shrink:0;">{{ l.name[0] }}</div>
+          <div style="flex:1;">
+            <div style="font-size:0.9375rem;font-weight:{% if l.is_you is defined and l.is_you %}700{% else %}500{% endif %};color:var(--text-primary);">{{ l.name }}{% if l.is_you is defined and l.is_you %} <span style="font-size:0.75rem;color:var(--accent);">(you)</span>{% endif %}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">{{ l.lang }}</div>
+          </div>
+          <div style="font-size:0.9375rem;font-weight:700;color:var(--accent);">{{ l.xp|string }}<i class="fa-solid fa-star"></i></div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Achievements -->
+    <div class="glass-card" style="padding:24px;">
+      <h3 style="font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:20px;"><i class="fa-solid fa-award"></i>️ Your Achievements</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;">
+        {% set achievements = [
+          {'icon':'<i class="fa-solid fa-fire"></i>','name':'7-Day Streak','desc':'Practice 7 days in a row','unlocked':true},
+          {'icon':'<i class="fa-solid fa-book"></i>','name':'Word Collector','desc':'Learn 50 words','unlocked':true},
+          {'icon':'<i class="fa-solid fa-microphone"></i>️','name':'First Voice','desc':'First transcription','unlocked':true},
+          {'icon':'<i class="fa-solid fa-robot"></i>','name':'AI Chatter','desc':'10 AI conversations','unlocked':false},
+          {'icon':'<i class="fa-solid fa-trophy"></i>','name':'Level 10','desc':'Complete level 10','unlocked':false},
+          {'icon':'<i class="fa-solid fa-star"></i>','name':'Polyglot','desc':'Use all 3 languages','unlocked':false},
+        ] %}
+        {% for a in achievements %}
+        <div style="background:{% if a.unlocked %}var(--accent-subtle){% else %}var(--bg-hover){% endif %};border:1px solid {% if a.unlocked %}var(--border-accent){% else %}var(--border){% endif %};border-radius:14px;padding:14px;text-align:center;{% if not a.unlocked %}opacity:0.5;{% endif %}">
+          <div style="font-size:1.75rem;margin-bottom:8px;">{{ a.icon }}</div>
+          <div style="font-size:0.8rem;font-weight:700;color:var(--text-primary);margin-bottom:4px;">{{ a.name }}</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);line-height:1.4;">{{ a.desc }}</div>
+          {% if a.unlocked %}<div style="margin-top:6px;font-size:0.7rem;color:var(--accent);font-weight:600;"><i class="fa-solid fa-check"></i> Unlocked</div>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right: Stats + Invite -->
+  <div class="animate-slide-up-3" style="display:flex;flex-direction:column;gap:14px;">
+
+    <!-- Your Stats -->
+    <div class="glass-card" style="padding:20px;">
+      <h3 style="font-size:0.9375rem;font-weight:700;color:var(--text-primary);margin-bottom:16px;"><i class="fa-solid fa-chart-simple"></i> Your Global Stats</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:0.875rem;color:var(--text-secondary);">Global Rank</span>
+          <span style="font-size:0.875rem;font-weight:700;color:var(--accent);">#3</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:0.875rem;color:var(--text-secondary);">Weekly XP</span>
+          <span style="font-size:0.875rem;font-weight:700;color:var(--text-primary);">1,890 <i class="fa-solid fa-star"></i></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="font-size:0.875rem;color:var(--text-secondary);">Words Learned</span>
+          <span style="font-size:0.875rem;font-weight:700;color:var(--text-primary);">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;">
+          <span style="font-size:0.875rem;color:var(--text-secondary);">Current Streak</span>
+          <span style="font-size:0.875rem;font-weight:700;color:#EF4444;"><i class="fa-solid fa-fire"></i> —</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Invite -->
+    <div class="glass-card" style="padding:20px;background:var(--accent-subtle);border-color:var(--border-accent);">
+      <div style="font-size:1.5rem;margin-bottom:12px;"><i class="fa-solid fa-handshake"></i></div>
+      <h3 style="font-size:0.9375rem;font-weight:700;color:var(--text-primary);margin-bottom:8px;">Invite Friends</h3>
+      <p style="font-size:0.8125rem;color:var(--text-secondary);line-height:1.6;margin-bottom:16px;">Challenge your friends and learn together. Share your referral link below.</p>
+      <div style="display:flex;gap:8px;">
+        <input type="text" class="form-input" value="linguavoice.app/join/{{ user_name|lower|replace(' ','') }}" readonly style="flex:1;font-size:0.75rem;padding:8px 10px;" id="invite-link">
+        <button onclick="copyInvite()" class="btn btn-primary btn-sm">Copy</button>
+      </div>
+    </div>
+
+    <!-- Community Links -->
+    <div class="glass-card" style="padding:20px;">
+      <h3 style="font-size:0.9375rem;font-weight:700;color:var(--text-primary);margin-bottom:14px;"><i class="fa-solid fa-globe"></i> Quick Practice</h3>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <a href="/learning_path" class="btn btn-secondary" style="justify-content:flex-start;"><i class="fa-solid fa-map"></i>️ View Learning Path</a>
+        <a href="/vocabulary" class="btn btn-secondary" style="justify-content:flex-start;"><i class="fa-solid fa-book"></i> My Vocabulary</a>
+        <a href="/ai_tutor" class="btn btn-secondary" style="justify-content:flex-start;"><i class="fa-solid fa-robot"></i> Practice with AI</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function copyInvite() {
+    const link = document.getElementById('invite-link');
+    navigator.clipboard.writeText(link.value).then(() => showToast('Invite link copied!', 'success'));
+  }
+</script>
+{% endblock %}

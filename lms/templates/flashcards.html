@@ -1,0 +1,157 @@
+{% extends "base_sidebar.html" %}
+{% block title %}Level {{ level_id }} Flashcards — LinguaVoice{% endblock %}
+{% block page_title %}Level {{ level_id }} — Flashcards{% endblock %}
+{% block page_subtitle %}Study these words before taking the quiz{% endblock %}
+
+{% block content %}
+
+<!-- Progress Bar -->
+<div class="animate-slide-up-1" style="margin-bottom: 28px;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+    <span style="font-size: 0.875rem; font-weight: 600; color: var(--text-secondary);">Card <span id="current-card">1</span> of {{ words|length }}</span>
+    <div style="display: flex; gap: 8px;">
+      <a href="/learning_path" class="btn btn-ghost btn-sm">← Back to Path</a>
+      <a href="/learning/level/{{ level_id }}/quiz" class="btn btn-primary btn-sm">Take Quiz <i class="fa-solid fa-chevron-right"></i></a>
+    </div>
+  </div>
+  <div class="progress-bar-track" style="height: 8px;">
+    <div class="progress-bar-fill" id="progress-fill" style="width: {{ (1 / [words|length, 1]|max * 100)|int }}%;"></div>
+  </div>
+</div>
+
+<!-- Flashcard -->
+<div class="animate-slide-up-2" style="max-width: 540px; margin: 0 auto;">
+  <div class="flashcard" id="flashcard" onclick="flipCard()">
+    <div class="flashcard-inner" id="flashcard-inner">
+      <div class="flashcard-face">
+        <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 16px;">Word</div>
+        <div id="card-word" style="font-size: 2.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 12px;"></div>
+        <div id="card-lang" class="chip" style="font-size: 0.75rem;"></div>
+        <div style="margin-top: 24px; font-size: 0.8125rem; color: var(--text-muted);">Tap to reveal meaning</div>
+      </div>
+      <div class="flashcard-face flashcard-back">
+        <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.7; margin-bottom: 16px;">Meaning</div>
+        <div id="card-meaning" style="font-size: 1.375rem; font-weight: 600; line-height: 1.5;"></div>
+        <div id="card-example" style="margin-top: 16px; font-size: 0.9375rem; opacity: 0.85; font-style: italic;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div style="display: flex; gap: 14px; margin-top: 28px; justify-content: center; align-items: center;">
+    <button onclick="prevCard()" class="btn btn-secondary btn-lg" id="prev-btn" disabled>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Previous
+    </button>
+
+    <button onclick="markKnown()" class="btn btn-primary" style="padding: 12px 20px; background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); box-shadow: none;" title="I know this word">
+      <i class="fa-solid fa-check"></i> Know it
+    </button>
+    <button onclick="markUnknown()" class="btn btn-primary" style="padding: 12px 20px; background: rgba(239,68,68,0.1); color: #EF4444; border: 1px solid rgba(239,68,68,0.25); box-shadow: none;" title="Practice more">
+      <i class="fa-solid fa-xmark"></i> Practice more
+    </button>
+
+    <button onclick="nextCard()" class="btn btn-secondary btn-lg" id="next-btn">
+      Next
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+
+  <!-- Summary (hidden until done) -->
+  <div id="summary-panel" style="display:none; margin-top:28px;">
+    <div class="glass-card" style="padding:32px;text-align:center;">
+      <div style="font-size:3rem;margin-bottom:16px;"><i class="fa-solid fa-star"></i></div>
+      <h2 style="font-size:1.5rem;font-weight:800;color:var(--text-primary);margin-bottom:8px;">All cards reviewed!</h2>
+      <p style="color:var(--text-secondary);margin-bottom:8px;">Known: <span id="known-count" style="color:#10B981;font-weight:700;">0</span> &nbsp;·&nbsp; Practicing: <span id="unknown-count" style="color:#EF4444;font-weight:700;">0</span></p>
+      <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:24px;">Feel ready? Take the quiz to earn XP and complete this level.</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <button onclick="restartCards()" class="btn btn-secondary btn-lg">↺ Review Again</button>
+        <a href="/learning/level/{{ level_id }}/quiz" class="btn btn-primary btn-lg">Start Quiz <i class="fa-solid fa-chevron-right"></i></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const words = {{ words | tojson }};
+  let currentIndex = 0;
+  let known = 0, unknown = 0;
+  const langFlags = { en: 'EN', es: 'ES', hi: 'HI' };
+
+  function showCard(index) {
+    if (index >= words.length) { showSummary(); return; }
+    const w = words[index];
+    document.getElementById('card-word').textContent = w.word || '—';
+    document.getElementById('card-lang').textContent = langFlags[w.language] || (w.language || '').toUpperCase();
+    document.getElementById('card-meaning').textContent = w.meaning || 'No meaning available';
+    document.getElementById('card-example').textContent = w.example || '';
+    document.getElementById('current-card').textContent = index + 1;
+    document.getElementById('progress-fill').style.width = ((index + 1) / words.length * 100) + '%';
+    // Reset flip
+    document.getElementById('flashcard').classList.remove('flipped');
+    // Button states
+    document.getElementById('prev-btn').disabled = index === 0;
+    document.getElementById('next-btn').disabled = false;
+  }
+
+  function flipCard() {
+    document.getElementById('flashcard').classList.toggle('flipped');
+  }
+
+  function nextCard() {
+    currentIndex++;
+    showCard(currentIndex);
+  }
+
+  function prevCard() {
+    if (currentIndex > 0) { currentIndex--; showCard(currentIndex); }
+  }
+
+  function markKnown() {
+    known++;
+    showToast('Marked as known <i class="fa-solid fa-check"></i>', 'success');
+    nextCard();
+  }
+
+  function markUnknown() {
+    unknown++;
+    showToast('Added to practice list', 'info');
+    nextCard();
+  }
+
+  function showSummary() {
+    document.getElementById('flashcard').style.display = 'none';
+    document.querySelector('[onclick="prevCard()"]').style.display = 'none';
+    document.querySelector('[onclick="nextCard()"]').style.display = 'none';
+    document.querySelector('[onclick="markKnown()"]').style.display = 'none';
+    document.querySelector('[onclick="markUnknown()"]').style.display = 'none';
+    document.getElementById('known-count').textContent = known;
+    document.getElementById('unknown-count').textContent = unknown;
+    document.getElementById('summary-panel').style.display = 'block';
+  }
+
+  function restartCards() {
+    currentIndex = 0; known = 0; unknown = 0;
+    document.getElementById('flashcard').style.display = 'block';
+    document.querySelectorAll('[onclick^="prev"],[onclick^="next"],[onclick^="mark"]').forEach(b => b.style.display = '');
+    document.getElementById('summary-panel').style.display = 'none';
+    showCard(0);
+  }
+
+  // Init
+  if (words.length) showCard(0);
+  else document.getElementById('card-word').textContent = 'No words for this level';
+
+  // Keyboard navigation
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') nextCard();
+    else if (e.key === 'ArrowLeft') prevCard();
+    else if (e.key === ' ') { e.preventDefault(); flipCard(); }
+    else if (e.key === 'k') markKnown();
+    else if (e.key === 'x') markUnknown();
+  });
+</script>
+{% endblock %}

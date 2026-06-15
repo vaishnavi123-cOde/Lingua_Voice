@@ -1,0 +1,125 @@
+{% extends "base_sidebar.html" %}
+{% block title %}Validation — LinguaVoice{% endblock %}
+{% block page_title %}Word Validation{% endblock %}
+{% block page_subtitle %}Verify and validate words in your vocabulary bank{% endblock %}
+
+{% block content %}
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+
+  <!-- Validate a Word -->
+  <div class="glass-card" style="padding:28px;">
+    <h3 style="font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:20px;display:flex;align-items:center;gap:10px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Validate a Word
+    </h3>
+    <div class="form-group">
+      <label class="form-label" for="val-word">Word to validate</label>
+      <input type="text" id="val-word" class="form-input" placeholder="Enter a word…" onkeydown="if(event.key==='Enter')validateWord()">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="val-lang">Language</label>
+      <select id="val-lang" class="form-input">
+        <option value="en">English</option>
+        <option value="es">Spanish</option>
+        <option value="hi">Hindi</option>
+      </select>
+    </div>
+    <button onclick="validateWord()" class="btn btn-primary w-full" style="justify-content:center;" id="val-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Validate Word
+    </button>
+
+    <!-- Result -->
+    <div id="val-result" style="display:none;margin-top:20px;padding:16px;border-radius:14px;border:1px solid var(--border);">
+      <div id="val-result-content"></div>
+    </div>
+  </div>
+
+  <!-- Your Word Bank -->
+  <div class="glass-card" style="padding:28px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <h3 style="font-size:1rem;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        Spoken Words
+      </h3>
+      <button onclick="loadWords()" class="btn btn-ghost btn-sm">↻ Refresh</button>
+    </div>
+    <div id="words-list" style="display:flex;flex-direction:column;gap:8px;max-height:480px;overflow-y:auto;">
+      <p style="color:var(--text-muted);font-size:0.875rem;">Loading…</p>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  async function validateWord() {
+    const word = document.getElementById('val-word').value.trim();
+    const lang = document.getElementById('val-lang').value;
+    if (!word) return showToast('Enter a word first', 'info');
+
+    const btn = document.getElementById('val-btn');
+    btn.disabled = true;
+    btn.textContent = 'Validating…';
+
+    try {
+      const res = await fetch(`/api/validate_word_manual?word=${encodeURIComponent(word)}&lang=${lang}`);
+      const data = await res.json();
+      const resultEl = document.getElementById('val-result');
+      const contentEl = document.getElementById('val-result-content');
+      resultEl.style.display = 'block';
+
+      if (data.valid || data.is_valid) {
+        resultEl.style.background = 'rgba(16,185,129,0.08)';
+        resultEl.style.borderColor = 'rgba(16,185,129,0.3)';
+        contentEl.innerHTML = `
+          <div style="font-size:0.9375rem;font-weight:700;color:#10B981;margin-bottom:8px;"><i class="fa-solid fa-check"></i> Valid word — stored to your bank</div>
+          <div style="font-size:0.875rem;color:var(--text-primary);">${data.meaning || 'Meaning fetched from dictionary'}</div>
+        `;
+        showToast('Word validated and saved!', 'success');
+      } else {
+        resultEl.style.background = 'rgba(239,68,68,0.06)';
+        resultEl.style.borderColor = 'rgba(239,68,68,0.25)';
+        contentEl.innerHTML = `
+          <div style="font-size:0.9375rem;font-weight:700;color:#EF4444;margin-bottom:8px;"><i class="fa-solid fa-xmark"></i> Word not recognized</div>
+          <div style="font-size:0.875rem;color:var(--text-secondary);">${data.message || 'This word was not found in our dictionaries.'}</div>
+        `;
+      }
+      loadWords();
+    } catch(e) {
+      showToast('Validation failed', 'error');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Validate Word';
+  }
+
+  async function loadWords() {
+    try {
+      const res = await fetch('/api/get_my_spoken_words');
+      const words = await res.json();
+      const list = document.getElementById('words-list');
+      const langFlag = { en:'EN', es:'ES', hi:'HI' };
+      if (!words.length) {
+        list.innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem;">No words yet — start speaking!</p>';
+        return;
+      }
+      list.innerHTML = words.slice(0,30).map(w => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg-hover);border-radius:10px;">
+          <span style="font-size:0.8rem;">${langFlag[w.language]||'<i class="fa-solid fa-globe"></i>'}</span>
+          <div style="flex:1;overflow:hidden;">
+            <div style="font-size:0.9375rem;font-weight:600;color:var(--text-primary);">${w.word}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${(w.meaning||'').substring(0,60)}</div>
+          </div>
+          <span class="mastery-badge mastery-${Math.min(Math.max(w.mastery_level||1,1),5)}" style="font-size:0.7rem;">${w.mastery_level||1}</span>
+        </div>
+      `).join('');
+    } catch(e) {}
+  }
+
+  loadWords();
+</script>
+{% endblock %}

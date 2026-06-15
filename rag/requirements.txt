@@ -1,0 +1,31 @@
+# Core
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.3
+pydantic-settings==2.7.0
+
+# RAG / Embeddings
+sentence-transformers==3.4.1
+tf-keras>=2.16.0  # Required by newer TensorFlow versions for SentenceTransformer
+qdrant-client==1.13.1
+ollama==0.4.7
+
+# TTS
+edge-tts==7.0.0
+
+# OCR
+easyocr==1.7.2
+opencv-python-headless==4.10.0.84
+Pillow==11.1.0
+imagehash==4.3.1
+thefuzz[speedup]==0.22.1
+
+# Audio/Video
+faster-whisper==1.1.1
+
+# Monitoring
+python-json-logger==3.2.1
+
+# Utils
+numpy==2.2.1
+python-multipart==0.0.19

@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LinguaVoice{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style2.css') }}">
+    {% block extra_css %}{% endblock %}
+
+    <style>
+    /* ═══════════════════════════════════════════════════════════
+       LINGUAVOICE — OLED DARK THEME OVERRIDE
+       Matches the landing page & login/signup aesthetic.
+       ═══════════════════════════════════════════════════════════ */
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+        --accent:       #ffa500;
+        --accent-dim:   rgba(255, 165, 0, 0.12);
+        --accent-glow:  rgba(255, 165, 0, 0.25);
+        --bg:           #000000;
+        --surface:      rgba(255,255,255,0.04);
+        --surface2:     rgba(255,255,255,0.07);
+        --border:       rgba(255,255,255,0.07);
+        --border-strong:rgba(255,255,255,0.14);
+        --text-1:       #ffffff;
+        --text-2:       rgba(255,255,255,0.60);
+        --text-3:       rgba(255,255,255,0.30);
+        --sidebar-w:    260px;
+        --topbar-h:     64px;
+        --radius:       14px;
+        --radius-lg:    20px;
+        --glass: rgba(10, 10, 10, 0.75);
+        --font: 'Inter', -apple-system, sans-serif;
+        --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    html, body {
+        height: 100%;
+        background: var(--bg);
+        color: var(--text-1);
+        font-family: var(--font);
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button { font-family: var(--font); cursor: pointer; }
+
+    /* ── Background Effect ─────────────────────────────── */
+    body::before {
+        content: '';
+        position: fixed; inset: 0; z-index: 0;
+        background-image:
+            linear-gradient(rgba(255,165,0,0.025) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,165,0,0.025) 1px, transparent 1px);
+        background-size: 60px 60px;
+        pointer-events: none;
+    }
+
+    .bg-glow-tl {
+        position: fixed; top: -15%; left: -10%;
+        width: 600px; height: 600px;
+        background: radial-gradient(circle, rgba(255,165,0,0.055) 0%, transparent 70%);
+        pointer-events: none; z-index: 0;
+        animation: driftGlow 22s ease-in-out infinite alternate;
+    }
+
+    .bg-glow-br {
+        position: fixed; bottom: -10%; right: -10%;
+        width: 500px; height: 500px;
+        background: radial-gradient(circle, rgba(99,102,241,0.055) 0%, transparent 70%);
+        pointer-events: none; z-index: 0;
+        animation: driftGlow 28s ease-in-out infinite alternate-reverse;
+    }
+
+    @keyframes driftGlow {
+        from { transform: translate(0,0) scale(1); }
+        to   { transform: translate(30px, 20px) scale(1.08); }
+    }
+
+    /* ── App Shell ─────────────────────────────────────── */
+    .app-layout {
+        display: flex;
+        min-height: 100vh;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* ── Sidebar ───────────────────────────────────────── */
+    .sidebar {
+        width: var(--sidebar-w);
+        background: var(--glass);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        z-index: 100;
+        transition: transform 0.3s var(--ease);
+        overflow: hidden;
+    }
+
+    .sidebar-header {
+        padding: 1.25rem 1.25rem 1rem;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--text-1);
+        text-decoration: none;
+        transition: opacity 0.2s;
+    }
+
+    .brand:hover { opacity: 0.85; transform: none; }
+
+    .brand-logo {
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        object-fit: cover;
+        box-shadow: 0 0 14px rgba(255,165,0,0.3);
+        border: 1px solid rgba(255,165,0,0.2);
+        flex-shrink: 0;
+    }
+
+    .brand-logo:hover { transform: none; }
+
+    .brand-text {
+        background: linear-gradient(135deg, #ffa500, #ffcc44);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: -0.3px;
+    }
+
+    .sidebar-nav {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .sidebar-nav::-webkit-scrollbar { width: 3px; }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .nav-section {
+        font-size: 0.62rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--text-3);
+        padding: 0.9rem 0.75rem 0.4rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0.7rem 0.9rem;
+        border-radius: var(--radius);
+        color: var(--text-2);
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.18s var(--ease);
+        text-decoration: none;
+        position: relative;
+        margin: 0;
+        border: 1px solid transparent;
+    }
+
+    .nav-link:hover {
+        background: var(--surface2);
+        color: var(--text-1);
+        transform: none;
+        border-color: var(--border);
+    }
+
+    .nav-link.active {
+        background: var(--accent-dim);
+        color: var(--accent);
+        border-color: rgba(255,165,0,0.2);
+        font-weight: 600;
+        box-shadow: none;
+    }
+
+    .nav-icon { font-size: 1rem; flex-shrink: 0; width: 20px; text-align: center; }
+
+    .sidebar-footer {
+        padding: 0.75rem;
+        border-top: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .user-info {
+        font-size: 0.8rem;
+        color: var(--text-3);
+        padding: 0.4rem 0.6rem;
+    }
+
+    /* ── Main Content ──────────────────────────────────── */
+    .main-content {
+        flex: 1;
+        margin-left: var(--sidebar-w);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* ── Top Bar ───────────────────────────────────────── */
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 2rem;
+        padding: 1.25rem 2rem;
+        background: rgba(0,0,0,0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        margin: 0;
+    }
+
+    .topbar-left h1, .page-title {
+        font-size: 1.4rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        color: var(--text-1);
+        margin: 0;
+        background: none;
+        -webkit-text-fill-color: unset;
+        background-clip: unset;
+        -webkit-background-clip: unset;
+    }
+
+    .topbar-left p, .page-subtitle {
+        font-size: 0.82rem;
+        color: var(--text-2);
+        margin: 3px 0 0;
+    }
+
+    .topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* ── Page Body ─────────────────────────────────────── */
+    .page-content {
+        flex: 1;
+        padding: 2rem;
+    }
+
+    /* ── Buttons ───────────────────────────────────────── */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 0.65rem 1.2rem;
+        border-radius: var(--radius);
+        font-weight: 600;
+        font-size: 0.875rem;
+        border: 1px solid var(--border);
+        cursor: pointer;
+        transition: all 0.2s var(--ease);
+        font-family: var(--font);
+        text-decoration: none;
+        white-space: nowrap;
+        background: var(--surface);
+        color: var(--text-2);
+        box-shadow: none;
+    }
+
+    .btn:hover { background: var(--surface2); color: var(--text-1); border-color: var(--border-strong); transform: translateY(-1px); box-shadow: none; }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #ffa500, #e08000);
+        color: #000;
+        border-color: transparent;
+        font-weight: 700;
+        box-shadow: 0 4px 16px rgba(255,165,0,0.25);
+    }
+
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,165,0,0.4); background: linear-gradient(135deg, #ffb830, #ffa500); color: #000; border-color: transparent; }
+
+    .btn-secondary {
+        background: var(--surface);
+        color: var(--text-2);
+        border-color: var(--border);
+    }
+
+    .btn-secondary:hover { background: var(--surface2); color: var(--text-1); border-color: rgba(255,165,0,0.2); }
+
+    .btn-ghost { background: transparent; border-color: transparent; color: var(--text-2); box-shadow: none; }
+    .btn-ghost:hover { background: var(--surface); color: var(--text-1); border-color: var(--border); }
+    .btn-sm { padding: 0.45rem 0.9rem; font-size: 0.8rem; }
+    .btn-large { padding: 0.9rem 1.8rem; font-size: 1rem; }
+
+    /* ── Cards ─────────────────────────────────────────── */
+    .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        box-shadow: none;
+        transition: border-color 0.2s, background 0.2s;
+    }
+
+    .card:hover {
+        border-color: var(--border-strong);
+        background: var(--surface2);
+        transform: none;
+        box-shadow: none;
+    }
+
+    .card-title { font-size: 1rem; font-weight: 700; color: var(--text-1); margin-bottom: 0.75rem; }
+
+    /* ── Stat Cards ────────────────────────────────────── */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        transition: border-color 0.2s, background 0.2s, transform 0.2s;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute; top: 0; left: 0; right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, #ffa500, #ffcc44);
+        opacity: 0.6;
+    }
+
+    .stat-card:nth-child(2)::before { background: linear-gradient(90deg, #10b981, #34d399); }
+    .stat-card:nth-child(3)::before { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+    .stat-card:nth-child(4)::before { background: linear-gradient(90deg, #ec4899, #f43f5e); }
+
+    .stat-card:hover { border-color: rgba(255,165,0,0.2); background: var(--surface2); transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.4); }
+
+    .stat-icon { font-size: 1.6rem; margin-bottom: 0.75rem; }
+    .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 0.4rem; font-weight: 700; }
+    .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--accent); letter-spacing: -0.04em; margin-bottom: 0.4rem; -webkit-text-fill-color: unset; background: none; }
+    .stat-card:nth-child(2) .stat-value { color: #10b981; -webkit-text-fill-color: unset; background: none; }
+    .stat-card:nth-child(3) .stat-value { color: #6366f1; -webkit-text-fill-color: unset; background: none; }
+    .stat-card:nth-child(4) .stat-value { color: #ec4899; -webkit-text-fill-color: unset; background: none; }
+    .stat-change { font-size: 0.8rem; color: #10b981; font-weight: 600; }
+
+    /* ── Action/Feature Cards ──────────────────────────── */
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .action-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem 1.25rem;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.2s var(--ease);
+        color: var(--text-1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .action-card::after { display: none; }
+
+    .action-card:hover {
+        border-color: rgba(255,165,0,0.2);
+        background: rgba(255,165,0,0.04);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+    }
+
+    .action-icon {
+        width: 48px; height: 48px;
+        background: var(--accent-dim);
+        border: 1px solid rgba(255,165,0,0.15);
+        border-radius: var(--radius);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+        transition: transform 0.2s;
+        box-shadow: none;
+    }
+
+    .action-card:hover .action-icon { transform: scale(1.05); }
+    .action-card:nth-child(2) .action-icon { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.15); }
+    .action-card:nth-child(3) .action-icon { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.15); }
+
+    .action-title { font-size: 0.9rem; font-weight: 700; color: var(--text-1); }
+    .action-description { font-size: 0.8rem; color: var(--text-2); margin-top: 3px; line-height: 1.5; }
+
+    /* ── Activity Feed ─────────────────────────────────── */
+    .activity-feed {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem;
+        box-shadow: none;
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.9rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        transition: none;
+    }
+
+    .activity-item:last-child { border-bottom: none; }
+
+    .activity-item:hover {
+        background: none;
+        padding: 0.9rem 0;
+        margin: 0;
+        padding-left: 0; padding-right: 0;
+    }
+
+    .activity-icon-wrap {
+        width: 40px; height: 40px;
+        background: var(--accent-dim);
+        border-radius: var(--radius);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+        box-shadow: none;
+    }
+
+    .activity-title { font-size: 0.875rem; font-weight: 600; color: var(--text-1); margin-bottom: 2px; }
+    .activity-time  { font-size: 0.75rem; color: var(--text-3); }
+
+    /* ── Inputs ────────────────────────────────────────── */
+    input, select, textarea {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        color: var(--text-1);
+        border-radius: var(--radius);
+        padding: 0.75rem 1rem;
+        font: inherit;
+        font-size: 0.9rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input::placeholder, textarea::placeholder { color: var(--text-3); }
+
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        background: rgba(255,255,255,0.07);
+        box-shadow: 0 0 0 3px rgba(255,165,0,0.12);
+    }
+
+    select option { background: #111; color: #fff; }
+
+    /* ── Tabs ──────────────────────────────────────────── */
+    .tabs-container {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .tab-btn {
+        padding: 0.6rem 1.1rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--text-2);
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.18s;
+        font-family: var(--font);
+    }
+
+    .tab-btn:hover { color: var(--text-1); border-color: var(--border-strong); background: var(--surface2); }
+
+    .tab-btn.active {
+        background: var(--accent-dim);
+        color: var(--accent);
+        border-color: rgba(255,165,0,0.25);
+        box-shadow: none;
+    }
+
+    /* ── Section Labels ────────────────────────────────── */
+    .section-title {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: var(--text-1);
+        letter-spacing: -0.5px;
+        margin-bottom: 0.75rem;
+    }
+
+    .section-label {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--accent);
+        margin-bottom: 0.5rem;
+    }
+
+    /* ── Forms ─────────────────────────────────────────── */
+    .form-group { display: flex; flex-direction: column; margin-bottom: 1.25rem; }
+    .form-label { font-size: 0.8rem; font-weight: 700; color: var(--text-2); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .form-input {
+        width: 100%;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        color: var(--text-1);
+        border-radius: var(--radius);
+        padding: 0.85rem 1rem;
+        font: inherit;
+        font-size: 0.9rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-input::placeholder { color: var(--text-3); }
+    .form-input:focus { outline: none; border-color: var(--accent); background: rgba(255,255,255,0.07); box-shadow: 0 0 0 3px rgba(255,165,0,0.12); }
+
+    /* ── Alerts ────────────────────────────────────────── */
+    .alert, .alert-error, .error-alert, .alert-success { border-radius: var(--radius); padding: 0.85rem 1rem; margin-bottom: 1rem; font-weight: 500; font-size: 0.875rem; }
+    .alert-error, .error-alert { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; }
+    .alert-success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: #6ee7b7; }
+
+    /* ── Misc ──────────────────────────────────────────── */
+    .text-muted { color: var(--text-3); }
+    .text-secondary { color: var(--text-2); }
+    .divider { border-top: 1px solid var(--border); margin: 1.25rem 0; }
+    .helper-text { font-size: 0.78rem; color: var(--text-3); margin-top: 0.35rem; }
+
+    .search-box {
+        width: 100%;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--border);
+        color: var(--text-1);
+        border-radius: var(--radius);
+        padding: 0.85rem 1rem;
+        font: inherit;
+        font-size: 0.9rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .search-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,165,0,0.12); background: rgba(255,255,255,0.07); }
+
+    /* ── Animations ────────────────────────────────────── */
+    .fade-up-1 { animation: fadeUp 0.5s ease both 0.05s; }
+    .fade-up-2 { animation: fadeUp 0.5s ease both 0.12s; }
+    .fade-up-3 { animation: fadeUp 0.5s ease both 0.2s; }
+    .fade-up-4 { animation: fadeUp 0.5s ease both 0.28s; }
+    .fade-up-5 { animation: fadeUp 0.5s ease both 0.36s; }
+
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(18px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Mobile ────────────────────────────────────────── */
+    @media (max-width: 900px) {
+        .sidebar { transform: translateX(-100%); }
+        .sidebar.open { transform: translateX(0); box-shadow: 8px 0 40px rgba(0,0,0,0.7); }
+        .main-content { margin-left: 0; }
+        .page-content { padding: 1.25rem; }
+        .topbar { padding: 1rem 1.25rem; }
+    }
+
+    /* ── Toast Container ───────────────────────────────── */
+    #toast-container {
+        position: fixed;
+        bottom: 24px; right: 24px;
+        z-index: 9999;
+        display: flex; flex-direction: column; gap: 10px;
+    }
+    </style>
+</head>
+<body>
+
+<!-- Background effects -->
+<div class="bg-glow-tl"></div>
+<div class="bg-glow-br"></div>
+
+<div class="app-layout">
+
+    <!-- ── Sidebar ──────────────────────────────────────── -->
+    <aside class="sidebar" id="app-sidebar">
+        <div class="sidebar-header">
+            <a href="/dashboard" class="brand">
+                <img src="/static/images/serphawk_logo.jpg" alt="LinguaVoice" class="brand-logo">
+                <span class="brand-text">LinguaVoice</span>
+            </a>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">Main</div>
+
+            <a href="/dashboard" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                <span class="nav-icon">📊</span> Dashboard
+            </a>
+            <a href="/transcription" class="nav-link {% if request.endpoint == 'transcription_page' %}active{% endif %}">
+                <span class="nav-icon">🎙️</span> Transcription
+            </a>
+            <a href="/ai_tutor" class="nav-link {% if request.endpoint == 'ai_tutor_page' %}active{% endif %}">
+                <span class="nav-icon">🤖</span> AI Tutor
+            </a>
+
+            <div class="nav-section">Learning</div>
+
+            <a href="/vocabulary" class="nav-link {% if request.endpoint == 'vocabulary_page' %}active{% endif %}">
+                <span class="nav-icon">📚</span> Vocabulary
+            </a>
+            <a href="/learning_path" class="nav-link {% if request.endpoint == 'learning_path_page' %}active{% endif %}">
+                <span class="nav-icon">🎯</span> Learning Path
+            </a>
+            <a href="/notes" class="nav-link {% if request.endpoint == 'notes_page' %}active{% endif %}">
+                <span class="nav-icon">📝</span> Notes
+            </a>
+            <a href="/test" class="nav-link {% if request.endpoint == 'test_page' %}active{% endif %}">
+                <span class="nav-icon">🧪</span> Practice Test
+            </a>
+
+            <div class="nav-section">Insights</div>
+
+            <a href="/analytics" class="nav-link {% if request.endpoint == 'analytics_page' %}active{% endif %}">
+                <span class="nav-icon">📈</span> Analytics
+            </a>
+            <a href="/community" class="nav-link {% if request.endpoint == 'community_page' %}active{% endif %}">
+                <span class="nav-icon">👥</span> Community
+            </a>
+            <a href="/certificate" class="nav-link {% if request.endpoint == 'certificate_page' %}active{% endif %}">
+                <span class="nav-icon">🏆</span> Certificate
+            </a>
+            <a href="/validation" class="nav-link {% if request.endpoint == 'validation_page' %}active{% endif %}">
+                <span class="nav-icon">✅</span> Validation
+            </a>
+
+            <div class="nav-section">Tools</div>
+
+            <a href="/sql-training" class="nav-link {% if request.endpoint == 'sql_training' %}active{% endif %}">
+                <span class="nav-icon">🗃️</span> SQL Training
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-info">
+                Logged in as <strong style="color:rgba(255,255,255,0.7);">{{ session.get('user_name', 'User') }}</strong>
+            </div>
+            <a href="/logout" class="btn btn-secondary btn-sm" style="color:rgba(255,100,100,0.8);border-color:rgba(255,100,100,0.15);">
+                ⬅ Sign Out
+            </a>
+        </div>
+    </aside>
+
+    <!-- ── Main Area ─────────────────────────────────────── -->
+    <main class="main-content">
+
+        <!-- Top Bar -->
+        <header class="topbar">
+            <!-- Mobile toggle -->
+            <button id="sidebar-toggle" class="btn btn-ghost btn-sm" onclick="toggleSidebar()" style="display:none;" aria-label="Menu">☰</button>
+
+            <div class="topbar-left" style="flex:1;">
+                <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                <p class="page-subtitle">{% block page_subtitle %}Welcome to LinguaVoice{% endblock %}</p>
+            </div>
+
+            <div class="topbar-actions">
+                {% block topbar_actions %}{% endblock %}
+                <a href="/dashboard" class="btn btn-ghost btn-sm">🏠 Home</a>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+            {% block content %}{% endblock %}
+        </div>
+
+    </main>
+</div>
+
+<!-- Mobile overlay -->
+<div id="sidebar-overlay" onclick="closeSidebar()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99;backdrop-filter:blur(4px);"></div>
+
+<div id="toast-container"></div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block extra_js %}{% endblock %}
+
+<script>
+// Mobile sidebar
+function toggleSidebar() {
+    const s = document.getElementById('app-sidebar');
+    const o = document.getElementById('sidebar-overlay');
+    if (s.classList.contains('open')) { closeSidebar(); }
+    else { s.classList.add('open'); o.style.display = 'block'; }
+}
+
+function closeSidebar() {
+    document.getElementById('app-sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').style.display = 'none';
+}
+
+// Show mobile toggle on small screens
+const toggle = document.getElementById('sidebar-toggle');
+function checkMobile() {
+    if (window.innerWidth <= 900) toggle.style.display = 'flex';
+    else { toggle.style.display = 'none'; closeSidebar(); }
+}
+window.addEventListener('resize', checkMobile);
+checkMobile();
+
+// Active nav highlight (backup via path matching)
+document.querySelectorAll('.nav-link').forEach(link => {
+    const href = link.getAttribute('href');
+    if (href && href !== '/' && window.location.pathname.startsWith(href)) {
+        link.classList.add('active');
+    }
+});
+</script>
+
+</body>
+</html>

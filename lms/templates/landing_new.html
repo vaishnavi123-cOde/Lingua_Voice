@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinguaVoice — Speak Confidently in Any Language</title>
+  <meta name="description" content="LinguaVoice — AI-powered real-time voice language learning. Practice speaking with your personal AI coach.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #000;
+      --accent: #ffa500;
+      --accent-dim: rgba(255,165,0,0.12);
+      --text-1: #fff;
+      --text-2: rgba(255,255,255,0.6);
+      --text-3: rgba(255,255,255,0.35);
+      --border: rgba(255,255,255,0.08);
+      --surface: rgba(255,255,255,0.04);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--black);
+      color: var(--text-1);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; }
+
+    /* ── Background grid + glow ── */
+    .bg-grid {
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(255,165,0,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,165,0,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+
+    .bg-glow-1 {
+      position: fixed;
+      top: -20%; left: -10%;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(255,165,0,0.06) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+      animation: driftGlow 20s ease-in-out infinite alternate;
+    }
+
+    .bg-glow-2 {
+      position: fixed;
+      bottom: -10%; right: -10%;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+      animation: driftGlow 25s ease-in-out infinite alternate-reverse;
+    }
+
+    @keyframes driftGlow {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(40px, 30px) scale(1.1); }
+    }
+
+    /* ── Nav ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5%;
+      height: 72px;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 1.2rem; font-weight: 800; color: #fff;
+    }
+
+    .nav-brand-dot {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #ffa500, #e06000);
+      box-shadow: 0 0 16px rgba(255,165,0,0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    .nav-links {
+      display: flex; align-items: center; gap: 8px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      padding: 8px 16px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-2);
+      border-radius: 8px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: #fff; }
+
+    .nav-actions { display: flex; align-items: center; gap: 10px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; padding: 11px 22px;
+      border-radius: 10px; font-weight: 600; font-size: 0.9rem;
+      border: none; cursor: pointer; transition: all 0.2s; text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ffa500, #e06000);
+      color: #000;
+      box-shadow: 0 4px 20px rgba(255,165,0,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,165,0,0.45); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-2);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface); color: #fff; border-color: rgba(255,255,255,0.16); }
+
+    .btn-outline {
+      background: transparent;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .btn-outline:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.35);
+    }
+
+    .btn-xl { padding: 16px 36px; font-size: 1rem; border-radius: 14px; font-weight: 700; }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px 5% 80px;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(255,165,0,0.2);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    @keyframes fadeDown {
+      from { opacity:0; transform: translateY(-16px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    .hero-heading {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      color: #fff;
+      max-width: 900px;
+      animation: fadeUp 0.7s ease 0.1s both;
+    }
+
+    .hero-heading em {
+      font-style: normal;
+      background: linear-gradient(135deg, #ffa500, #ffcc44);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateY(32px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    .hero-sub {
+      max-width: 600px;
+      margin: 28px auto 0;
+      font-size: 1.15rem;
+      color: var(--text-2);
+      line-height: 1.7;
+      animation: fadeUp 0.7s ease 0.2s both;
+    }
+
+    .hero-actions {
+      display: flex; align-items: center; justify-content: center;
+      flex-wrap: wrap; gap: 14px;
+      margin-top: 44px;
+      animation: fadeUp 0.7s ease 0.3s both;
+    }
+
+    .hero-social-proof {
+      margin-top: 60px;
+      display: flex; align-items: center; justify-content: center; gap: 32px;
+      flex-wrap: wrap;
+      animation: fadeUp 0.7s ease 0.45s both;
+    }
+
+    .proof-item {
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    .proof-number {
+      font-size: 1.8rem;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      color: var(--accent);
+    }
+
+    .proof-label {
+      font-size: 0.8rem;
+      color: var(--text-3);
+      font-weight: 500;
+    }
+
+    .proof-divider {
+      width: 1px; height: 40px;
+      background: var(--border);
+    }
+
+    /* ── Hero visual ── */
+    .hero-visual {
+      position: relative; z-index: 1;
+      margin-top: 80px; margin-bottom: -20px;
+      width: 100%; max-width: 800px;
+      animation: fadeUp 0.8s ease 0.5s both;
+    }
+
+    .hero-app-preview {
+      background: rgba(12,12,12,0.9);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 24px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,165,0,0.08);
+    }
+
+    .preview-bar {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .preview-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+    }
+    .preview-dot:nth-child(1) { background: #ef4444; }
+    .preview-dot:nth-child(2) { background: #f59e0b; }
+    .preview-dot:nth-child(3) { background: #10b981; }
+
+    .preview-url {
+      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border-radius: 6px;
+      height: 24px;
+      display: flex; align-items: center;
+      padding: 0 12px;
+      font-size: 0.75rem;
+      color: var(--text-3);
+    }
+
+    .preview-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    .preview-stat {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .preview-stat-icon { font-size: 1.3rem; margin-bottom: 8px; }
+
+    .preview-stat-label {
+      font-size: 0.7rem;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+
+    .preview-stat-val {
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -0.04em;
+    }
+
+    .preview-stat-sub {
+      font-size: 0.7rem;
+      color: var(--text-3);
+      margin-top: 4px;
+    }
+
+    /* ── Marquee ── */
+    .marquee-section {
+      position: relative; z-index: 1;
+      padding: 40px 0;
+      overflow: hidden;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.01);
+      mask-image: linear-gradient(90deg, transparent, black 15%, black 85%, transparent);
+      -webkit-mask-image: linear-gradient(90deg, transparent, black 15%, black 85%, transparent);
+    }
+
+    .marquee-track {
+      display: flex; gap: 48px;
+      width: max-content;
+      animation: marquee 28s linear infinite;
+    }
+
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    .marquee-item {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.9rem; font-weight: 600;
+      color: var(--text-3);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .marquee-item span { font-size: 1.3rem; }
+
+    /* ── Features ── */
+    .section {
+      position: relative; z-index: 1;
+      padding: 100px 5%;
+    }
+
+    .section-label {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      color: #fff;
+      max-width: 600px;
+      margin-bottom: 20px;
+    }
+
+    .section-sub {
+      font-size: 1.05rem;
+      color: var(--text-2);
+      max-width: 560px;
+      line-height: 1.7;
+      margin-bottom: 60px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      transition: all 0.3s ease;
+      cursor: default;
+    }
+
+    .feature-card:hover {
+      border-color: rgba(255,165,0,0.2);
+      background: rgba(255,165,0,0.03);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+
+    .feature-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(255,165,0,0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      transition: transform 0.3s ease;
+    }
+
+    .feature-card:hover .feature-icon { transform: scale(1.1) rotate(5deg); }
+
+    .feature-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 10px;
+      letter-spacing: -0.2px;
+    }
+
+    .feature-desc {
+      font-size: 0.9rem;
+      color: var(--text-2);
+      line-height: 1.6;
+    }
+
+    /* ── How it works ── */
+    .process-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .process-step {
+      background: #000;
+      padding: 36px 30px;
+      transition: background 0.2s;
+    }
+
+    .process-step:hover { background: rgba(255,165,0,0.03); }
+
+    .step-number {
+      font-size: 3rem;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      color: rgba(255,165,0,0.15);
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+
+    .step-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    .step-desc {
+      font-size: 0.9rem;
+      color: var(--text-2);
+      line-height: 1.6;
+    }
+
+    /* ── Testimonials ── */
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .testimonial-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      transition: all 0.3s;
+    }
+
+    .testimonial-card:hover {
+      border-color: var(--border-strong, rgba(255,255,255,0.16));
+      transform: translateY(-3px);
+    }
+
+    .testimonial-stars {
+      color: var(--accent);
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+
+    .testimonial-text {
+      font-size: 0.95rem;
+      color: var(--text-2);
+      line-height: 1.7;
+      margin-bottom: 20px;
+      font-style: italic;
+    }
+
+    .testimonial-author {
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    .author-avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: 800; color: #fff;
+    }
+
+    .author-name { font-size: 0.9rem; font-weight: 700; color: #fff; }
+    .author-location { font-size: 0.8rem; color: var(--text-3); }
+
+    /* ── CTA ── */
+    .cta-section {
+      position: relative; z-index: 1;
+      padding: 100px 5%;
+      text-align: center;
+    }
+
+    .cta-card {
+      background: linear-gradient(135deg, rgba(255,165,0,0.08) 0%, rgba(124,58,237,0.08) 100%);
+      border: 1px solid rgba(255,165,0,0.15);
+      border-radius: 28px;
+      padding: 72px 48px;
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    .cta-heading {
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      color: #fff;
+      margin-bottom: 20px;
+    }
+
+    .cta-sub {
+      font-size: 1.05rem;
+      color: var(--text-2);
+      margin-bottom: 40px;
+      max-width: 480px;
+      margin-left: auto; margin-right: auto;
+    }
+
+    /* ── Footer ── */
+    footer {
+      position: relative; z-index: 1;
+      padding: 40px 5%;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-brand {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 1rem; font-weight: 800; color: #fff;
+    }
+
+    footer p { font-size: 0.85rem; color: var(--text-3); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hero-heading { font-size: 2.6rem; }
+      .preview-content { grid-template-columns: 1fr; }
+      .hero-social-proof { gap: 20px; }
+      .proof-divider { display: none; }
+      .cta-card { padding: 48px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow-1"></div>
+<div class="bg-glow-2"></div>
+
+<!-- ── Nav ──────────────────────────────────────────────── -->
+<nav class="nav">
+  <a href="/" class="nav-brand">
+    <div class="nav-brand-dot">🦅</div>
+    LinguaVoice
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how-it-works">How it works</a></li>
+    <li><a href="#testimonials">Reviews</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="/login" class="btn btn-ghost btn-sm">Sign In</a>
+    <a href="/signup" class="btn btn-primary btn-sm">Get Started Free</a>
+  </div>
+</nav>
+
+<!-- ── Hero ─────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-eyebrow">
+    🏆 &nbsp;#1 AI Language Coach
+  </div>
+
+  <h1 class="hero-heading">
+    Speak any language with<br>
+    <em>AI-powered</em> confidence
+  </h1>
+
+  <p class="hero-sub">
+    Real-time voice transcription, personal AI tutoring, and adaptive coaching — all in one premium platform built for serious learners.
+  </p>
+
+  <div class="hero-actions">
+    <a href="/signup" class="btn btn-primary btn-xl">
+      🚀 &nbsp;Start for free
+    </a>
+    <a href="/login" class="btn btn-outline btn-xl">
+      Sign in →
+    </a>
+  </div>
+
+  <div class="hero-social-proof">
+    <div class="proof-item">
+      <span class="proof-number">50+</span>
+      <span class="proof-label">Languages</span>
+    </div>
+    <div class="proof-divider"></div>
+    <div class="proof-item">
+      <span class="proof-number">10k+</span>
+      <span class="proof-label">Learners</span>
+    </div>
+    <div class="proof-divider"></div>
+    <div class="proof-item">
+      <span class="proof-number">4.9★</span>
+      <span class="proof-label">Avg Rating</span>
+    </div>
+    <div class="proof-divider"></div>
+    <div class="proof-item">
+      <span class="proof-number">98%</span>
+      <span class="proof-label">Success Rate</span>
+    </div>
+  </div>
+
+  <!-- App preview -->
+  <div class="hero-visual">
+    <div class="hero-app-preview">
+      <div class="preview-bar">
+        <div class="preview-dot"></div>
+        <div class="preview-dot"></div>
+        <div class="preview-dot"></div>
+        <div class="preview-url">app.linguavoice.ai/dashboard</div>
+      </div>
+      <div class="preview-content">
+        <div class="preview-stat">
+          <div class="preview-stat-icon">⭐</div>
+          <div class="preview-stat-label">Total XP</div>
+          <div class="preview-stat-val">1,240</div>
+          <div class="preview-stat-sub">↗ +120 this week</div>
+        </div>
+        <div class="preview-stat">
+          <div class="preview-stat-icon">🔥</div>
+          <div class="preview-stat-label">Day Streak</div>
+          <div class="preview-stat-val">12</div>
+          <div class="preview-stat-sub">Keep it up!</div>
+        </div>
+        <div class="preview-stat">
+          <div class="preview-stat-icon">📚</div>
+          <div class="preview-stat-label">Vocabulary</div>
+          <div class="preview-stat-val">85</div>
+          <div class="preview-stat-sub">+7 new words</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Language marquee ──────────────────────────────────── -->
+<div class="marquee-section">
+  <div class="marquee-track">
+    <div class="marquee-item"><span>🇪🇸</span> Español</div>
+    <div class="marquee-item"><span>🇫🇷</span> Français</div>
+    <div class="marquee-item"><span>🇩🇪</span> Deutsch</div>
+    <div class="marquee-item"><span>🇯🇵</span> 日本語</div>
+    <div class="marquee-item"><span>🇨🇳</span> 中文</div>
+    <div class="marquee-item"><span>🇮🇳</span> हिन्दी</div>
+    <div class="marquee-item"><span>🇸🇦</span> العربية</div>
+    <div class="marquee-item"><span>🇵🇹</span> Português</div>
+    <div class="marquee-item"><span>🇮🇹</span> Italiano</div>
+    <div class="marquee-item"><span>🇰🇷</span> 한국어</div>
+    <!-- duplicate for seamless loop -->
+    <div class="marquee-item"><span>🇪🇸</span> Español</div>
+    <div class="marquee-item"><span>🇫🇷</span> Français</div>
+    <div class="marquee-item"><span>🇩🇪</span> Deutsch</div>
+    <div class="marquee-item"><span>🇯🇵</span> 日本語</div>
+    <div class="marquee-item"><span>🇨🇳</span> 中文</div>
+    <div class="marquee-item"><span>🇮🇳</span> हिन्दी</div>
+    <div class="marquee-item"><span>🇸🇦</span> العربية</div>
+    <div class="marquee-item"><span>🇵🇹</span> Português</div>
+    <div class="marquee-item"><span>🇮🇹</span> Italiano</div>
+    <div class="marquee-item"><span>🇰🇷</span> 한국어</div>
+  </div>
+</div>
+
+<!-- ── Features ──────────────────────────────────────────── -->
+<section class="section" id="features">
+  <div style="text-align:center;margin-bottom:60px;">
+    <span class="section-label">Why LinguaVoice</span>
+    <h2 class="section-title" style="margin:0 auto;">Everything you need to become fluent</h2>
+  </div>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🎙️</div>
+      <div class="feature-title">Real-time Voice AI</div>
+      <div class="feature-desc">Speak into the app and get instant transcription, corrections, and pronunciation feedback — just like a native speaker coach.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <div class="feature-title">Personal AI Tutor</div>
+      <div class="feature-desc">Chat with an intelligent AI that remembers your vocabulary, adapts to your level, and guides you through real conversations.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📚</div>
+      <div class="feature-title">Smart Vocabulary</div>
+      <div class="feature-desc">Every word you speak is automatically captured, validated, and added to your personal vocabulary bank with meanings.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📈</div>
+      <div class="feature-title">Progress Analytics</div>
+      <div class="feature-desc">Visual dashboards show your daily streaks, XP earned, words mastered, and speaking time — all in real time.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🧭</div>
+      <div class="feature-title">100-Level Path</div>
+      <div class="feature-desc">Structured learning journey from Beginner to Advanced. Complete levels, earn XP, and unlock certificates.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌍</div>
+      <div class="feature-title">50+ Languages</div>
+      <div class="feature-desc">English, Spanish, Hindi and growing. Multi-language transcription switching in a single session.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How it works ──────────────────────────────────────── -->
+<section class="section" id="how-it-works" style="padding-top:0;">
+  <div style="text-align:center;margin-bottom:60px;">
+    <span class="section-label">How It Works</span>
+    <h2 class="section-title" style="margin:0 auto;">Start speaking in under 2 minutes</h2>
+  </div>
+
+  <div class="process-grid">
+    <div class="process-step">
+      <div class="step-number">01</div>
+      <div class="step-title">Create your account</div>
+      <div class="step-desc">Sign up free in seconds — no credit card required. Pick your target language and dive in.</div>
+    </div>
+    <div class="process-step">
+      <div class="step-number">02</div>
+      <div class="step-title">Speak naturally</div>
+      <div class="step-desc">Use the microphone. Your voice is transcribed in real-time and matched against a smart vocabulary engine.</div>
+    </div>
+    <div class="process-step">
+      <div class="step-number">03</div>
+      <div class="step-title">Get coached</div>
+      <div class="step-desc">Your AI tutor gives instant feedback, suggests new phrases, and builds on what you already know.</div>
+    </div>
+    <div class="process-step">
+      <div class="step-number">04</div>
+      <div class="step-title">Track & master</div>
+      <div class="step-desc">Watch your streak grow, unlock new levels, earn XP, and achieve language certificates.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Testimonials ──────────────────────────────────────── -->
+<section class="section" id="testimonials" style="padding-top:0;">
+  <div style="text-align:center;margin-bottom:60px;">
+    <span class="section-label">Learner Stories</span>
+    <h2 class="section-title" style="margin:0 auto;">Real people, real results</h2>
+  </div>
+
+  <div class="testimonials-grid">
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <div class="testimonial-text">"I went from zero Spanish to holding a real conversation in 3 months. The AI tutor is like having a private coach available 24/7."</div>
+      <div class="testimonial-author">
+        <div class="author-avatar">M</div>
+        <div>
+          <div class="author-name">Maya S.</div>
+          <div class="author-location">Berlin, Germany</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <div class="testimonial-text">"The real-time transcription is what sold me. I can practice talking and actually see where I'm making mistakes — instantly."</div>
+      <div class="testimonial-author">
+        <div class="author-avatar">A</div>
+        <div>
+          <div class="author-name">Ayesha K.</div>
+          <div class="author-location">Dubai, UAE</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="testimonial-stars">★★★★★</div>
+      <div class="testimonial-text">"No other app felt this intelligent. It remembers the words I struggle with and consistently brings them back until I've mastered them."</div>
+      <div class="testimonial-author">
+        <div class="author-avatar">L</div>
+        <div>
+          <div class="author-name">Liam T.</div>
+          <div class="author-location">Toronto, Canada</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Pricing ───────────────────────────────────────────── -->
+<section class="section" id="pricing" style="padding-top:0;">
+  <div style="text-align:center;margin-bottom:60px;">
+    <span class="section-label">Pricing</span>
+    <h2 class="section-title" style="margin:0 auto;">Simple, transparent pricing</h2>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:700px;margin:0 auto;">
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:36px;">
+      <h3 style="font-size:1.1rem;font-weight:800;margin-bottom:8px;">Starter</h3>
+      <div style="font-size:2.5rem;font-weight:900;letter-spacing:-0.05em;margin-bottom:24px;">Free</div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:12px;margin-bottom:32px;">
+        <li style="font-size:0.9rem;color:rgba(255,255,255,0.65);display:flex;gap:10px;align-items:center;"><span style="color:#10b981;">✓</span> 3 Languages</li>
+        <li style="font-size:0.9rem;color:rgba(255,255,255,0.65);display:flex;gap:10px;align-items:center;"><span style="color:#10b981;">✓</span> Voice Transcription</li>
+        <li style="font-size:0.9rem;color:rgba(255,255,255,0.65);display:flex;gap:10px;align-items:center;"><span style="color:#10b981;">✓</span> Basic AI Tutor</li>
+        <li style="font-size:0.9rem;color:rgba(255,255,255,0.65);display:flex;gap:10px;align-items:center;"><span style="color:#10b981;">✓</span> 10 Levels</li>
+      </ul>
+      <a href="/signup" class="btn btn-outline" style="width:100%;justify-content:center;padding:13px;">Get Started</a>
+    </div>
+
+    <div style="background:linear-gradient(135deg,rgba(255,165,0,0.08),rgba(124,58,237,0.08));border:1px solid rgba(255,165,0,0.25);border-radius:20px;padding:36px;position:relative;">
+      <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#ffa500,#e06000);color:#000;font-size:0.75rem;font-weight:800;padding:5px 14px;border-radius:999px;white-space:nowrap;">MOST POPULAR</div>
+      <h3 style="font-size:1.1rem;font-weight:800;margin-bottom:8px;">Pro</h3>
+      <div style="font-size:2.5rem;font-weight:900;letter-spacing:-0.05em;margin-bottom:24px;">$9<span style="font-size:1rem;color:rgba(255,255,255,0.5);font-weight:500;">.99/mo</span></div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:12px;margin-bottom:32px;">
+        <li style="font-size:0.9rem;color:rgba(255,255,255,0.65);display:flex;gap:10px;align-items:center;"><span style="color:#ffa500;">✓</span> All 50+ Languages</li>
+        <li style="font-size:0.9rem;color:rgba(255,255,255,0.65);display:flex;gap:10px;align-items:center;"><span style="color:#ffa500;">✓</span> Unlimited AI Coaching</li>
+        <li style="font-size:0.9rem;color:rgba(255,255,255,0.65);display:flex;gap:10px;align-items:center;"><span style="color:#ffa500;">✓</span> 100-Level Learning Path</li>
+        <li style="font-size:0.9rem;color:rgba(255,255,255,0.65);display:flex;gap:10px;align-items:center;"><span style="color:#ffa500;">✓</span> Certificates & Analytics</li>
+      </ul>
+      <a href="/signup" class="btn btn-primary" style="width:100%;justify-content:center;padding:13px;">Start Free Trial</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ───────────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="cta-card">
+    <h2 class="cta-heading">Ready to speak your first<br>perfect sentence?</h2>
+    <p class="cta-sub">Join thousands of learners building real language skills through AI-powered conversation practice.</p>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+      <a href="/signup" class="btn btn-primary btn-xl">Start Learning Free →</a>
+      <a href="/login" class="btn btn-outline btn-xl">Sign in</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-brand">
+    <div class="nav-brand-dot" style="width:24px;height:24px;border-radius:7px;font-size:12px;">🦅</div>
+    LinguaVoice
+  </div>
+  <p>© 2026 LinguaVoice. All rights reserved. Built with ❤️ for language learners.</p>
+  <div style="display:flex;gap:16px;">
+    <a href="/login" style="font-size:0.85rem;color:rgba(255,255,255,0.4);transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">Login</a>
+    <a href="/signup" style="font-size:0.85rem;color:rgba(255,255,255,0.4);transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">Sign Up</a>
+  </div>
+</footer>
+
+</body>
+</html>
