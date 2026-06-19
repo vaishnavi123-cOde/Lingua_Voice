@@ -1,0 +1,977 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Review Center — LinguaVoice{% endblock %}
+{% block page_title %}Review Center{% endblock %}
+{% block page_subtitle %}Smart review — strengthen your memory{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/review.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<svg style="position:absolute;width:0;height:0;">
+  <defs>
+    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffa500"/>
+      <stop offset="100%" stop-color="#ffcc44"/>
+    </linearGradient>
+    <linearGradient id="xpGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffa500"/>
+      <stop offset="100%" stop-color="#ff6b00"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div id="app"></div>
+
+<div class="stats-grid fade-up-1" style="margin-bottom:24px;">
+  <div class="stat-card">
+    <div class="stat-icon">📅</div>
+    <div class="stat-label">Due Today</div>
+    <div class="stat-value" id="srs-due-count">...</div>
+    <div class="stat-change">words to review</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">✅</div>
+    <div class="stat-label">Reviews Done</div>
+    <div class="stat-value" id="srs-completed">...</div>
+    <div class="stat-change">total completed</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🎯</div>
+    <div class="stat-label">Accuracy</div>
+    <div class="stat-value" id="srs-accuracy">...%</div>
+    <div class="stat-change">retention rate</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">⭐</div>
+    <div class="stat-label">SRS XP</div>
+    <div class="stat-value" id="srs-xp">...</div>
+    <div class="stat-change">earned from reviews</div>
+  </div>
+</div>
+
+<div class="fade-up-2" style="display:grid;grid-template-columns:1fr;gap:20px;">
+
+  <!-- PROGRESS BAR -->
+  <div id="srs-progress-bar" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="progress-ring">
+          <svg width="80" height="80">
+            <circle class="progress-ring-circle progress-ring-bg" cx="40" cy="40" r="36"/>
+            <circle class="progress-ring-circle progress-ring-fill" id="progress-fill-circle" cx="40" cy="40" r="36"/>
+          </svg>
+          <div class="progress-ring-text" id="progress-pct-text">0%</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div class="combo-indicator" id="combo-indicator">
+          <span class="combo-fire">🔥</span>
+          <span>Combo </span>
+          <span class="combo-count" id="combo-count">0</span>
+        </div>
+        <span style="font-size:0.85rem;color:var(--text-2);" id="srs-progress-text">0 of 0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI COMPANION -->
+  <div id="ai-companion-section" style="display:none;text-align:center;">
+    <div class="ai-companion happy" id="ai-companion">
+      <div class="ai-companion-glow"></div>
+      <div class="ai-companion-emoji" id="companion-emoji">🐣</div>
+      <div class="ai-companion-bubble" id="companion-bubble">Let's review!</div>
+    </div>
+  </div>
+
+  <!-- MODE SELECTOR -->
+  <div id="mode-selector-section" style="display:none;">
+    <div class="mode-selector" id="mode-selector"></div>
+  </div>
+
+  <!-- LOADING STATE -->
+  <div id="srs-loading" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;gap:16px;">
+    <div style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+    <p style="color:var(--text-2);font-size:0.9rem;">Loading reviews...</p>
+  </div>
+  <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+  <!-- EMPTY STATE -->
+  <div id="srs-empty" style="display:none;text-align:center;padding:60px 20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);">
+    <div style="font-size:4rem;margin-bottom:16px;">🎉</div>
+    <h3 style="font-weight:700;margin-bottom:8px;color:var(--text-1);">All caught up!</h3>
+    <p style="color:var(--text-2);font-size:0.9rem;max-width:400px;margin:0 auto;">No words due for review. Come back later or learn new words to build your review queue.</p>
+    <a href="/vocabulary" class="btn btn-primary" style="margin-top:20px;">Study Vocabulary</a>
+  </div>
+
+  <!-- REVIEW CARD CONTAINER -->
+  <div id="srs-card-container" style="display:none;">
+    <div class="review-card" id="review-card">
+      <div class="review-card-glow" id="card-glow"></div>
+      <div class="review-card-inner" id="card-inner">
+
+        <!-- FRONT SIDE -->
+        <div class="review-card-front" id="card-front">
+          <div style="position:absolute;top:16px;right:20px;font-size:0.75rem;color:var(--text-3);font-weight:600;" id="srs-card-index"></div>
+          <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-3);font-weight:700;margin-bottom:6px;" id="srs-card-lang"></div>
+
+          <!-- Word → Meaning mode -->
+          <div id="view-word-meaning" style="display:none;width:100%;text-align:center;">
+            <div class="word-display" style="font-size:2.2rem;font-weight:800;color:var(--text-1);margin-bottom:8px;letter-spacing:-0.5px;" id="display-word"></div>
+            <div style="font-size:0.85rem;color:var(--text-2);margin-bottom:6px;">Mastery: <span id="display-mastery"></span>/5 <span id="display-mastery-label" style="font-size:0.75rem;"></span></div>
+            <div style="font-size:0.8rem;color:var(--text-3);margin-bottom:20px;" id="display-context">Do you know what this means?</div>
+            <button id="srs-reveal-btn" class="btn btn-primary btn-lg" style="padding:0.9rem 3rem;font-weight:700;border-radius:50px;">Reveal Answer</button>
+          </div>
+
+          <!-- Meaning → Word mode -->
+          <div id="view-meaning-word" style="display:none;width:100%;text-align:center;">
+            <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);font-weight:700;margin-bottom:12px;">What word means...</div>
+            <div style="font-size:1.4rem;font-weight:700;color:var(--accent);margin-bottom:20px;padding:16px 24px;background:rgba(255,165,0,0.08);border-radius:14px;border:1px solid rgba(255,165,0,0.15);" id="display-meaning-prompt"></div>
+            <div style="font-size:0.85rem;color:var(--text-2);margin-bottom:6px;">Mastery: <span id="display-mastery2"></span>/5</div>
+            <button id="srs-reveal-btn-2" class="btn btn-primary btn-lg" style="padding:0.9rem 3rem;font-weight:700;border-radius:50px;">Show Word</button>
+          </div>
+
+          <!-- Multiple Choice mode -->
+          <div id="view-multiple-choice" style="display:none;width:100%;">
+            <div style="text-align:center;margin-bottom:20px;">
+              <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-3);font-weight:700;margin-bottom:6px;" id="mc-lang-label"></div>
+              <div style="font-size:2rem;font-weight:800;color:var(--text-1);margin-bottom:8px;" id="mc-word"></div>
+              <div style="font-size:0.85rem;color:var(--text-2);">Choose the correct meaning</div>
+            </div>
+            <div id="mc-options" style="max-width:400px;margin:0 auto;"></div>
+          </div>
+
+          <!-- Fill in the Blank mode -->
+          <div id="view-fill-blank" style="display:none;width:100%;text-align:center;">
+            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-3);font-weight:700;margin-bottom:12px;">Fill in the blank</div>
+            <div style="font-size:1.1rem;color:var(--text-1);margin-bottom:20px;line-height:1.6;" id="fill-sentence">The word <strong style="color:var(--accent);" id="fill-word-label"></strong> means...</div>
+            <input type="text" class="fill-blank-input" id="fill-input" placeholder="Type the meaning..." autocomplete="off" autofocus>
+            <button class="btn btn-primary btn-lg" id="fill-submit" style="margin-top:16px;padding:0.8rem 2.5rem;font-weight:700;border-radius:50px;">Check</button>
+          </div>
+
+          <!-- Quick Match mode -->
+          <div id="view-quick-match" style="display:none;width:100%;">
+            <div style="text-align:center;margin-bottom:16px;">
+              <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-3);font-weight:700;">Match the pairs</div>
+              <div style="font-size:0.85rem;color:var(--text-2);margin-top:4px;">Click a word then its meaning</div>
+            </div>
+            <div class="match-grid" id="match-grid"></div>
+          </div>
+        </div>
+
+        <!-- BACK SIDE (revealed) -->
+        <div class="review-card-back" id="card-back">
+          <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);font-weight:700;margin-bottom:8px;" id="back-label"></div>
+          <div style="font-size:2rem;font-weight:800;color:var(--text-1);margin-bottom:4px;" id="back-word"></div>
+          <div style="font-size:1.2rem;color:var(--accent);font-weight:600;margin-bottom:16px;padding:12px 24px;background:rgba(255,165,0,0.08);border-radius:12px;border:1px solid rgba(255,165,0,0.15);" id="back-meaning"></div>
+          <div style="font-size:0.8rem;color:var(--text-3);margin-bottom:4px;">Mastery: <span id="back-mastery"></span>/5</div>
+          <div style="font-size:0.8rem;color:var(--text-3);margin-bottom:20px;">Next review: <span id="back-interval"></span></div>
+          <div style="display:flex;gap:16px;justify-content:center;">
+            <button id="srs-incorrect-btn" class="btn" style="background:rgba(239,68,68,0.12);border:2px solid rgba(239,68,68,0.25);color:#fca5a5;padding:0.9rem 2.5rem;font-weight:700;border-radius:50px;min-width:140px;">Still Learning</button>
+            <button id="srs-correct-btn" class="btn btn-primary" style="padding:0.9rem 2.5rem;font-weight:700;border-radius:50px;min-width:140px;">Got It!</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- FEEDBACK OVERLAY is now inside the card as inline feedback -->
+
+  <!-- SESSION COMPLETE -->
+  <div id="srs-complete" style="display:none;text-align:center;padding:40px 30px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);">
+    <div id="complete-emoji" style="font-size:4rem;margin-bottom:12px;">🏆</div>
+    <h3 style="font-weight:700;margin-bottom:4px;color:var(--text-1);font-size:1.5rem;" id="complete-title">Session Complete!</h3>
+    <p style="color:var(--text-2);font-size:0.9rem;margin-bottom:24px;" id="complete-motivation">Great work today!</p>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:480px;margin:0 auto 24px;">
+      <div class="summary-stat">
+        <div class="stat-icon">📝</div>
+        <div class="stat-value" id="summary-reviewed">0</div>
+        <div class="stat-label">Reviewed</div>
+      </div>
+      <div class="summary-stat">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value" id="summary-correct">0</div>
+        <div class="stat-label">Correct</div>
+      </div>
+      <div class="summary-stat">
+        <div class="stat-icon">❌</div>
+        <div class="stat-value" id="summary-incorrect">0</div>
+        <div class="stat-label">Incorrect</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:480px;margin:0 auto 28px;">
+      <div class="summary-stat">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-value" id="summary-accuracy">0%</div>
+        <div class="stat-label">Accuracy</div>
+      </div>
+      <div class="summary-stat">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-value" id="summary-xp">+0</div>
+        <div class="stat-label">XP Earned</div>
+      </div>
+      <div class="summary-stat">
+        <div class="stat-icon">🔥</div>
+        <div class="stat-value" id="summary-streak">0</div>
+        <div class="stat-label">Best Combo</div>
+      </div>
+    </div>
+
+    <!-- Accuracy bar -->
+    <div style="max-width:480px;margin:0 auto 24px;">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--text-2);margin-bottom:6px;">
+        <span>Accuracy</span>
+        <span id="accuracy-bar-label">0%</span>
+      </div>
+      <div class="summary-bar">
+        <div class="summary-bar-fill" id="accuracy-bar-fill" style="width:0%;background:linear-gradient(90deg,#ef4444,#facc15,#22c55e);"></div>
+      </div>
+    </div>
+
+    <div id="session-achievements" style="display:none;margin-bottom:20px;">
+      <div style="font-size:0.85rem;color:var(--text-2);font-weight:600;margin-bottom:10px;">🏅 Achievements Unlocked</div>
+      <div id="session-achievements-list" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;"></div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <button id="srs-restart-btn" class="btn btn-primary btn-lg" style="border-radius:50px;padding:0.9rem 2.5rem;">Review Again</button>
+      <a href="/dashboard" class="btn btn-secondary btn-lg" style="border-radius:50px;padding:0.9rem 2.5rem;">Dashboard</a>
+    </div>
+  </div>
+</div>
+
+<!-- Achievement notification toast -->
+<div class="achievement-notification" id="ach-notification">
+  <div class="ach-icon" id="ach-icon">🏆</div>
+  <div class="ach-info">
+    <div class="ach-title" id="ach-title">Achievement Unlocked!</div>
+    <div class="ach-desc" id="ach-desc">Description</div>
+  </div>
+</div>
+
+<!-- Confetti container -->
+<div class="confetti-container" id="confetti-container"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ============================================================
+// REVIEW CENTER — ENHANCED ENGINE
+// ============================================================
+let reviewQueue = [];
+let currentIndex = 0;
+let sessionCorrect = 0;
+let sessionIncorrect = 0;
+let sessionXp = 0;
+let sessionCombo = 0;
+let startTime = 0;
+let currentMode = 'word_to_meaning';
+let isRevealed = false;
+let isProcessing = false;
+let matchSelected = null;
+
+const MODES = ['word_to_meaning', 'meaning_to_word', 'multiple_choice', 'fill_blank', 'quick_match'];
+const MODE_LABELS = {
+  'word_to_meaning': 'Word → Meaning',
+  'meaning_to_word': 'Meaning → Word',
+  'multiple_choice': 'Multiple Choice',
+  'fill_blank': 'Fill Blank',
+  'quick_match': 'Match Pairs'
+};
+
+const MASTERY_LABELS = ['New', 'Learning', 'Familiar', 'Proficient', 'Advanced', 'Mastered'];
+const COMPANION_STATES = {
+  happy: { emoji: '🐣', messages: ['Let\'s review!', 'You can do it!', 'Ready to learn?', 'Let\'s go!'] },
+  thinking: { emoji: '🤔', messages: ['Think about it...', 'What could it be?', 'Take your time...', 'Hmm...'] },
+  encouraging: { emoji: '💪', messages: ['You got this!', 'Almost there!', 'Keep going!', 'Nice try!'] },
+  celebrating: { emoji: '🎉', messages: ['Amazing!', 'Brilliant!', 'Perfect!', 'Wow!'] },
+  motivating: { emoji: '😊', messages: ['Don\'t give up!', 'You\'ll get it!', 'Keep trying!', 'Practice makes perfect!'] }
+};
+
+// ============================================================
+// INIT
+// ============================================================
+function showLoading(v) {
+  document.getElementById('srs-loading').style.display = v ? 'flex' : 'none';
+  document.getElementById('srs-empty').style.display = v ? 'none' : document.getElementById('srs-empty').style.display;
+  document.getElementById('srs-card-container').style.display = v ? 'none' : document.getElementById('srs-card-container').style.display;
+}
+async function loadReviews() {
+  showLoading(true);
+  try {
+    const [res, statsRes, comboRes] = await Promise.all([
+      fetch('/api/reviews/today'),
+      fetch('/api/reviews/stats'),
+      fetch('/api/reviews/combo')
+    ]);
+    const data = await res.json();
+    const stats = await statsRes.json();
+    const combo = await comboRes.json();
+
+    document.getElementById('srs-due-count').textContent = data.due_count;
+    document.getElementById('srs-completed').textContent = stats.total_reviews || 0;
+    document.getElementById('srs-accuracy').textContent = (stats.accuracy || 0) + '%';
+    document.getElementById('srs-xp').textContent = stats.xp_earned || 0;
+
+    reviewQueue = data.words || [];
+    currentIndex = 0;
+    sessionCorrect = 0;
+    sessionIncorrect = 0;
+    sessionXp = 0;
+    sessionCombo = 0;
+
+    if (reviewQueue.length === 0) {
+      document.getElementById('srs-empty').style.display = 'block';
+      document.getElementById('srs-card-container').style.display = 'none';
+      document.getElementById('srs-complete').style.display = 'none';
+      document.getElementById('srs-progress-bar').style.display = 'none';
+      document.getElementById('ai-companion-section').style.display = 'none';
+      document.getElementById('mode-selector-section').style.display = 'none';
+    } else {
+      document.getElementById('srs-empty').style.display = 'none';
+      document.getElementById('srs-card-container').style.display = 'block';
+      document.getElementById('srs-complete').style.display = 'none';
+      document.getElementById('srs-progress-bar').style.display = 'block';
+      document.getElementById('ai-companion-section').style.display = 'block';
+      document.getElementById('mode-selector-section').style.display = 'block';
+      updateCombo(combo.current_streak || 0);
+      buildModeSelector();
+      pickRandomMode();
+      showCard(0);
+    }
+  } catch(e) {
+    console.error('Failed to load reviews:', e);
+    document.getElementById('srs-loading').querySelector('p').textContent = 'Failed to load reviews.';
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ============================================================
+// MODE SELECTOR
+// ============================================================
+function buildModeSelector() {
+  const container = document.getElementById('mode-selector');
+  container.innerHTML = '';
+  MODES.forEach(mode => {
+    const btn = document.createElement('button');
+    btn.className = 'mode-btn' + (mode === currentMode ? ' active' : '');
+    btn.textContent = MODE_LABELS[mode];
+    btn.onclick = () => {
+      currentMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('card-inner').classList.remove('flipped');
+      if (reviewQueue.length > 0) {
+        renderCurrentCard();
+      }
+    };
+    container.appendChild(btn);
+  });
+}
+
+function pickRandomMode() {
+  const idx = Math.floor(Math.random() * MODES.length);
+  currentMode = MODES[idx];
+}
+
+// ============================================================
+// AI COMPANION
+// ============================================================
+function setCompanionState(state) {
+  const comp = document.getElementById('ai-companion');
+  const emoji = document.getElementById('companion-emoji');
+  const bubble = document.getElementById('companion-bubble');
+
+  comp.className = 'ai-companion ' + state;
+
+  const s = COMPANION_STATES[state] || COMPANION_STATES.happy;
+  emoji.textContent = s.emoji;
+
+  const msg = s.messages[Math.floor(Math.random() * s.messages.length)];
+  bubble.textContent = msg;
+  bubble.classList.remove('show');
+  void bubble.offsetWidth; // reflow
+  bubble.classList.add('show');
+
+  setTimeout(() => {
+    bubble.classList.remove('show');
+  }, 3000);
+}
+
+// ============================================================
+// COMBO
+// ============================================================
+function updateCombo(count) {
+  const el = document.getElementById('combo-indicator');
+  const countEl = document.getElementById('combo-count');
+  countEl.textContent = count;
+
+  el.className = 'combo-indicator';
+  if (count >= 15) { el.classList.add('combo-15', 'active'); }
+  else if (count >= 10) { el.classList.add('combo-10', 'active'); }
+  else if (count >= 5) { el.classList.add('combo-5', 'active'); }
+  else if (count >= 3) { el.classList.add('active'); }
+}
+
+// ============================================================
+// PROGRESS
+// ============================================================
+function updateProgress(index, total) {
+  const pct = total > 0 ? Math.round(index / total * 100) : 0;
+  document.getElementById('srs-progress-text').textContent = `${index} of ${total} reviewed`;
+  document.getElementById('progress-pct-text').textContent = pct + '%';
+
+  const circle = document.getElementById('progress-fill-circle');
+  const circumference = 2 * Math.PI * 36;
+  const offset = circumference - (pct / 100) * circumference;
+  circle.style.strokeDashoffset = offset;
+}
+
+// ============================================================
+// CARD RENDERING
+// ============================================================
+function showCard(index) {
+  const word = reviewQueue[index];
+  if (!word) {
+    finishSession();
+    return;
+  }
+
+  isRevealed = false;
+  isProcessing = false;
+  matchSelected = null;
+
+  document.getElementById('card-inner').classList.remove('flipped');
+  document.getElementById('srs-card-index').textContent = `${index + 1} / ${reviewQueue.length}`;
+  document.getElementById('srs-card-lang').textContent = (word.language || 'en').toUpperCase();
+
+  updateProgress(index, reviewQueue.length);
+  setCompanionState('happy');
+  renderCurrentCard();
+  startTime = Date.now();
+}
+
+function renderCurrentCard() {
+  const word = reviewQueue[currentIndex];
+  if (!word) return;
+
+  // Hide all views
+  ['view-word-meaning', 'view-meaning-word', 'view-multiple-choice', 'view-fill-blank', 'view-quick-match'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+
+  switch (currentMode) {
+    case 'word_to_meaning': renderWordToMeaning(word); break;
+    case 'meaning_to_word': renderMeaningToWord(word); break;
+    case 'multiple_choice': renderMultipleChoice(word); break;
+    case 'fill_blank': renderFillBlank(word); break;
+    case 'quick_match': renderQuickMatch(word); break;
+  }
+}
+
+// ---- Word → Meaning ----
+function renderWordToMeaning(word) {
+  document.getElementById('view-word-meaning').style.display = 'block';
+  document.getElementById('display-word').textContent = word.word;
+  document.getElementById('display-mastery').textContent = word.mastery_level || 0;
+  document.getElementById('display-mastery-label').textContent = MASTERY_LABELS[word.mastery_level] || '';
+  document.getElementById('display-context').textContent = 'Do you know what this means?';
+
+  document.getElementById('srs-reveal-btn').onclick = () => flipCard();
+  document.getElementById('back-label').textContent = (word.language || 'en').toUpperCase() + ' → Meaning';
+  document.getElementById('back-word').textContent = word.word;
+  document.getElementById('back-meaning').textContent = word.meaning || 'Meaning not available';
+  document.getElementById('back-mastery').textContent = word.mastery_level || 0;
+  document.getElementById('back-interval').textContent = 'Today';
+}
+
+// ---- Meaning → Word ----
+function renderMeaningToWord(word) {
+  document.getElementById('view-meaning-word').style.display = 'block';
+  document.getElementById('display-meaning-prompt').textContent = word.meaning || 'Meaning not available';
+  document.getElementById('display-mastery2').textContent = word.mastery_level || 0;
+
+  document.getElementById('srs-reveal-btn-2').onclick = () => flipCard();
+  document.getElementById('back-label').textContent = 'Meaning → ' + (word.language || 'en').toUpperCase();
+  document.getElementById('back-word').textContent = word.word;
+  document.getElementById('back-meaning').textContent = word.meaning || 'Meaning not available';
+  document.getElementById('back-mastery').textContent = word.mastery_level || 0;
+  document.getElementById('back-interval').textContent = 'Today';
+}
+
+// ---- Multiple Choice ----
+function renderMultipleChoice(word) {
+  document.getElementById('view-multiple-choice').style.display = 'block';
+  document.getElementById('mc-lang-label').textContent = (word.language || 'en').toUpperCase();
+  document.getElementById('mc-word').textContent = word.word;
+
+  const correctMeaning = word.meaning || 'Meaning not available';
+  const options = generateMC_Options(reviewQueue, currentIndex, correctMeaning);
+  const container = document.getElementById('mc-options');
+  container.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
+
+  options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'mc-option';
+    btn.innerHTML = `<span class="mc-letter">${letters[i]}</span>${opt.text}`;
+    btn.onclick = () => handleMC_Select(btn, opt.isCorrect);
+    container.appendChild(btn);
+  });
+}
+
+function generateMC_Options(queue, idx, correct) {
+  const options = [{ text: correct, isCorrect: true }];
+  const used = new Set([correct]);
+  const pool = queue.filter((w, i) => i !== idx && w.meaning && !used.has(w.meaning));
+  for (let w of pool) {
+    if (options.length >= 4) break;
+    if (!used.has(w.meaning)) {
+      options.push({ text: w.meaning, isCorrect: false });
+      used.add(w.meaning);
+    }
+  }
+  while (options.length < 4) {
+    const filler = ['A completely different thing', 'Not quite', 'Something else', 'Try again'].find(f => !used.has(f));
+    if (filler) {
+      options.push({ text: filler, isCorrect: false });
+      used.add(filler);
+    } else break;
+  }
+  return shuffleArray(options);
+}
+
+function handleMC_Select(btn, isCorrect) {
+  if (isProcessing) return;
+
+  const options = document.querySelectorAll('.mc-option');
+  options.forEach(o => o.classList.add('disabled'));
+
+  if (isCorrect) {
+    btn.classList.add('correct');
+    setTimeout(() => submitReview(true), 600);
+  } else {
+    btn.classList.add('incorrect');
+    const word = reviewQueue[currentIndex];
+    const correctText = (word.meaning || '').trim();
+    options.forEach(o => {
+      const txt = o.textContent.replace(/[A-D]/g, '').trim();
+      if (txt === correctText || correctText.includes(txt) || txt.includes(correctText)) {
+        o.classList.add('correct');
+      }
+    });
+    setTimeout(() => submitReview(false), 1500);
+  }
+}
+
+// ---- Fill in the Blank ----
+function renderFillBlank(word) {
+  document.getElementById('view-fill-blank').style.display = 'block';
+  document.getElementById('fill-word-label').textContent = word.word;
+  document.getElementById('fill-sentence').innerHTML = `What does <strong style="color:var(--accent);">${word.word}</strong> mean?`;
+  const input = document.getElementById('fill-input');
+  input.value = '';
+  input.className = 'fill-blank-input';
+  input.disabled = false;
+  input.focus();
+
+  const submitBtn = document.getElementById('fill-submit');
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Check';
+
+  const handler = () => handleFillSubmit(word);
+  submitBtn.onclick = handler;
+  input.onkeydown = (e) => { if (e.key === 'Enter') handler(); };
+}
+
+function handleFillSubmit(word) {
+  if (isProcessing) return;
+  const input = document.getElementById('fill-input');
+  const answer = input.value.trim().toLowerCase();
+  const correct = (word.meaning || '').toLowerCase();
+
+  const normalizedAnswer = answer.replace(/[^a-z0-9\s]/g, '');
+  const normalizedCorrect = correct.replace(/[^a-z0-9\s]/g, '');
+  const isExact = normalizedAnswer === normalizedCorrect;
+  const isClose = normalizedAnswer.length >= 4 && (normalizedCorrect.includes(normalizedAnswer) || normalizedAnswer.includes(normalizedCorrect));
+  const isCorrect = isExact || isClose;
+
+  input.disabled = true;
+  document.getElementById('fill-submit').disabled = true;
+
+  if (isCorrect) {
+    input.className = 'fill-blank-input correct';
+    setTimeout(() => submitReview(true), 600);
+  } else {
+    input.className = 'fill-blank-input incorrect';
+    input.value = word.meaning || '';
+    setTimeout(() => submitReview(false), 1500);
+  }
+}
+
+// ---- Quick Match ----
+function renderQuickMatch(word) {
+  // Need at least 2 words for matching
+  const pool = reviewQueue.filter((w, i) => i !== currentIndex && w.meaning);
+  if (pool.length < 1) {
+    // Fall back to word_to_meaning
+    currentMode = 'word_to_meaning';
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.textContent === MODE_LABELS['word_to_meaning']));
+    renderWordToMeaning(word);
+    return;
+  }
+
+  document.getElementById('view-quick-match').style.display = 'block';
+  const grid = document.getElementById('match-grid');
+  grid.innerHTML = '';
+  matchSelected = null;
+
+  // Create 2-3 pairs
+  const pick = pool.slice(0, Math.min(2, pool.length));
+  const pairs = [{ word: word.word, meaning: word.meaning }];
+  pick.forEach(w => pairs.push({ word: w.word, meaning: w.meaning }));
+
+  const items = [];
+  pairs.forEach((p, i) => {
+    items.push({ id: `w${i}`, text: p.word, type: 'word', pairId: i, meaning: p.meaning });
+    items.push({ id: `m${i}`, text: p.meaning, type: 'meaning', pairId: i, word: p.word });
+  });
+
+  shuffleArray(items).forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'match-item';
+    el.textContent = item.text;
+    el.dataset.id = item.id;
+    el.dataset.type = item.type;
+    el.dataset.pairId = item.pairId;
+    el.dataset.meaning = item.meaning || '';
+    el.dataset.word = item.word || '';
+    el.onclick = () => handleMatchClick(el, pairs.length);
+    grid.appendChild(el);
+  });
+}
+
+function handleMatchClick(el, pairCount) {
+  if (isProcessing || el.classList.contains('matched')) return;
+
+  if (!matchSelected) {
+    matchSelected = el;
+    el.classList.add('selected');
+  } else {
+    if (matchSelected === el) {
+      el.classList.remove('selected');
+      matchSelected = null;
+      return;
+    }
+
+    const a = matchSelected;
+    const b = el;
+
+    // Check if they match (word ↔ meaning of same pair)
+    const isMatch = (a.dataset.type === 'word' && b.dataset.type === 'meaning' && a.dataset.pairId === b.dataset.pairId) ||
+                    (a.dataset.type === 'meaning' && b.dataset.type === 'word' && a.dataset.pairId === b.dataset.pairId);
+
+    if (isMatch) {
+      a.classList.remove('selected');
+      a.classList.add('matched');
+      b.classList.add('matched');
+      matchSelected = null;
+
+      // Check if all matched
+      const matched = document.querySelectorAll('.match-item.matched').length;
+      if (matched >= pairCount * 2) {
+        setTimeout(() => submitReview(true), 500);
+      }
+    } else {
+      a.classList.remove('selected');
+      a.classList.add('wrong');
+      b.classList.add('wrong');
+      setTimeout(() => {
+        a.classList.remove('wrong');
+        b.classList.remove('wrong');
+      }, 400);
+      matchSelected = null;
+    }
+  }
+}
+
+// ============================================================
+// FLIP CARD ANIMATION
+// ============================================================
+function flipCard() {
+  const inner = document.getElementById('card-inner');
+  inner.classList.add('flipped');
+  setCompanionState('thinking');
+
+  bindBackButtons();
+}
+
+function bindBackButtons() {
+  const correctBtn = document.getElementById('srs-correct-btn');
+  const incorrectBtn = document.getElementById('srs-incorrect-btn');
+  correctBtn.onclick = () => submitReview(true);
+  incorrectBtn.onclick = () => submitReview(false);
+}
+
+// ============================================================
+// SUBMIT REVIEW
+// ============================================================
+async function submitReview(correct) {
+  if (isProcessing) return;
+  isProcessing = true;
+
+  const word = reviewQueue[currentIndex];
+  const responseTime = Date.now() - startTime;
+
+  try {
+    const res = await fetch('/api/reviews/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word_id: word.id, correct, response_time_ms: responseTime })
+    });
+    const data = await res.json();
+    const result = data.result || {};
+
+    if (correct) {
+      sessionCorrect++;
+      const xp = result.total_xp || result.xp || 5;
+      sessionXp += xp;
+      sessionCombo = result.combo || 0;
+      updateCombo(sessionCombo);
+      showXP_Float(xp, result.bonus_xp > 0);
+      if (sessionCombo >= 5) setCompanionState('celebrating');
+      else setCompanionState('celebrating');
+      showCardFeedback('correct', word, result);
+    } else {
+      sessionIncorrect++;
+      sessionCombo = 0;
+      updateCombo(sessionCombo);
+      setCompanionState('motivating');
+      showCardFeedback('incorrect', word, result);
+    }
+  } catch(e) {
+    console.error('Review submit error:', e);
+    if (correct) sessionCorrect++; else sessionIncorrect++;
+    advanceToNext();
+  }
+}
+
+// ============================================================
+// CARD FEEDBACK
+// ============================================================
+function showCardFeedback(type, word, result) {
+  const card = document.getElementById('review-card');
+
+  // Create feedback overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'feedback-overlay ' + type + ' show';
+
+  if (type === 'correct') {
+    overlay.innerHTML = `
+      <div class="feedback-icon correct-icon">✅</div>
+      <div class="feedback-text">Correct!</div>
+      <div class="feedback-subtext">Next review in ${result.interval || 1} day(s)</div>
+    `;
+  } else {
+    overlay.innerHTML = `
+      <div class="feedback-icon incorrect-icon">🤔</div>
+      <div class="feedback-text">${word.meaning || 'Keep practicing!'}</div>
+      <div class="feedback-subtext">Will review again tomorrow</div>
+    `;
+  }
+
+  card.appendChild(overlay);
+
+  const delay = type === 'correct' ? 1000 : 1800;
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    setTimeout(() => {
+      overlay.remove();
+      advanceToNext();
+    }, 300);
+  }, delay);
+}
+
+// ============================================================
+// XP FLOAT ANIMATION
+// ============================================================
+function showXP_Float(xp, isBonus) {
+  const el = document.createElement('div');
+  el.className = 'xp-float' + (isBonus ? ' bonus' : '');
+  el.textContent = `+${xp} XP`;
+  el.style.left = (40 + Math.random() * 20) + '%';
+  el.style.top = '40%';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
+
+// ============================================================
+// ADVANCE
+// ============================================================
+function advanceToNext() {
+  currentIndex++;
+  showCard(currentIndex);
+}
+
+// ============================================================
+// SESSION COMPLETE
+// ============================================================
+async function finishSession() {
+  document.getElementById('srs-card-container').style.display = 'none';
+  document.getElementById('srs-progress-bar').style.display = 'none';
+  document.getElementById('ai-companion-section').style.display = 'none';
+  document.getElementById('mode-selector-section').style.display = 'none';
+  document.getElementById('srs-complete').style.display = 'block';
+
+  updateProgress(reviewQueue.length, reviewQueue.length);
+
+  const total = sessionCorrect + sessionIncorrect;
+  const accuracy = total > 0 ? Math.round(sessionCorrect / total * 100) : 0;
+
+  document.getElementById('summary-reviewed').textContent = total;
+  document.getElementById('summary-correct').textContent = sessionCorrect;
+  document.getElementById('summary-incorrect').textContent = sessionIncorrect;
+  document.getElementById('summary-accuracy').textContent = accuracy + '%';
+  document.getElementById('summary-xp').textContent = '+' + sessionXp;
+  document.getElementById('summary-streak').textContent = sessionCombo;
+
+  // Accuracy bar animation
+  setTimeout(() => {
+    document.getElementById('accuracy-bar-fill').style.width = accuracy + '%';
+    document.getElementById('accuracy-bar-label').textContent = accuracy + '%';
+  }, 200);
+
+  // Motivational message
+  let emoji = '🏆', title = 'Session Complete!', msg = 'Great work today!';
+  if (accuracy === 100 && total >= 5) {
+    emoji = '🌟';
+    title = 'Perfect Session!';
+    msg = 'Flawless! You got every word right!';
+    launchConfetti();
+  } else if (accuracy >= 80) {
+    emoji = '🎉';
+    title = 'Excellent Work!';
+    msg = 'You\'re making great progress!';
+  } else if (accuracy >= 60) {
+    msg = 'Good effort! Keep practicing to improve.';
+  } else {
+    emoji = '💪';
+    title = 'Keep Going!';
+    msg = 'Every mistake is a learning opportunity!';
+  }
+
+  document.getElementById('complete-emoji').textContent = emoji;
+  document.getElementById('complete-title').textContent = title;
+  document.getElementById('complete-motivation').textContent = msg;
+
+  // Check achievements
+  try {
+    const res = await fetch('/api/reviews/complete_session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ perfect: accuracy === 100 && total >= 5, accuracy, total, correct: sessionCorrect })
+    });
+    const achData = await res.json();
+    if (achData.new_achievements && achData.new_achievements.length > 0) {
+      showAchievements(achData.new_achievements);
+    }
+  } catch(e) {
+    console.error('Failed to check achievements:', e);
+  }
+
+  // Refresh stats
+  try {
+    const statsRes = await fetch('/api/reviews/stats');
+    const stats = await statsRes.json();
+    document.getElementById('srs-due-count').textContent = stats.due_count || 0;
+    document.getElementById('srs-completed').textContent = stats.total_reviews || 0;
+    document.getElementById('srs-accuracy').textContent = (stats.accuracy || 0) + '%';
+    document.getElementById('srs-xp').textContent = stats.xp_earned || 0;
+  } catch(e) {}
+}
+
+// ============================================================
+// ACHIEVEMENTS
+// ============================================================
+function showAchievements(achievements) {
+  const section = document.getElementById('session-achievements');
+  const list = document.getElementById('session-achievements-list');
+  section.style.display = 'block';
+  list.innerHTML = '';
+
+  achievements.forEach(ach => {
+    const badge = document.createElement('div');
+    badge.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;animation:achBounce 0.6s ease-in-out;';
+    badge.innerHTML = `
+      <div style="font-size:2.5rem;">${ach.icon || '🏆'}</div>
+      <div style="font-size:0.75rem;font-weight:600;color:var(--text-1);">${ach.name}</div>
+    `;
+    list.appendChild(badge);
+
+    // Also show notification toast
+    showAchievementToast(ach);
+  });
+}
+
+function showAchievementToast(ach) {
+  const toast = document.getElementById('ach-notification');
+  document.getElementById('ach-icon').textContent = ach.icon || '🏆';
+  document.getElementById('ach-title').textContent = 'Achievement: ' + ach.name;
+  document.getElementById('ach-desc').textContent = ach.description || '';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 5000);
+}
+
+// ============================================================
+// CONFETTI
+// ============================================================
+function launchConfetti() {
+  const container = document.getElementById('confetti-container');
+  container.innerHTML = '';
+  const colors = ['#ffa500', '#818cf8', '#ec4899', '#22c55e', '#facc15', '#ff6b00', '#6366f1'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.width = (5 + Math.random() * 8) + 'px';
+    piece.style.height = (5 + Math.random() * 8) + 'px';
+    piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+    piece.style.animationDelay = Math.random() * 0.5 + 's';
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    container.appendChild(piece);
+  }
+  setTimeout(() => container.innerHTML = '', 5000);
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ============================================================
+// EVENT BINDING
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  loadReviews();
+
+  document.getElementById('srs-restart-btn').addEventListener('click', () => {
+    document.getElementById('srs-complete').style.display = 'none';
+    loadReviews();
+  });
+});
+</script>
+{% endblock %}

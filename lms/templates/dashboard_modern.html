@@ -32,7 +32,18 @@
     <div class="stat-value" id="time-spent">—</div>
     <div class="stat-change">This week</div>
   </div>
+  <div class="stat-card">
+    <div class="stat-icon">🔄</div>
+    <div class="stat-label">Words Due Today</div>
+    <div class="stat-value" id="due-words-count">—</div>
+    <div class="stat-change"><a href="/reviews" style="color:var(--accent);text-decoration:none;">Review now →</a></div>
+  </div>
 </div>
+
+<style>
+.stat-card:nth-child(5)::before { background: linear-gradient(90deg, #ffa500, #ffcc44); }
+.stat-card:nth-child(5) .stat-value { color: #ffa500; -webkit-text-fill-color: unset; background: none; }
+</style>
 
 <!-- ── Two-column layout ───────────────────────────────── -->
 <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:24px;margin-bottom:32px;" id="dashboard-grid">
@@ -118,8 +129,88 @@
 
 </div>
 
+<!-- ── Daily Intelligence Plan ─────────────────────────── -->
+<div class="fade-up-4" id="daily-plan-section" style="margin-bottom:32px;display:none;">
+  <h2 class="section-title">Today's Plan <span style="font-size:0.7rem;font-weight:400;color:var(--text-2);">powered by Learner Intelligence</span></h2>
+  <div id="daily-plan-loading" style="padding:20px;text-align:center;color:var(--text-2);">Analyzing your learning patterns...</div>
+  <div id="daily-plan-content" style="display:none;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px;" id="goals-grid"></div>
+    <div id="insights-container" style="margin-bottom:16px;"></div>
+    <div id="top-reviews-container"></div>
+  </div>
+</div>
+
+<style>
+.goal-badge {
+  display:flex;align-items:center;gap:10px;padding:14px 16px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;font-size:0.85rem;
+}
+.goal-badge .goal-icon { font-size:1.3rem; }
+.goal-badge .goal-label { color:var(--text-2); }
+.goal-badge .goal-value { font-weight:700; color:var(--text-1); margin-left:auto; }
+.insight-item {
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border-radius:8px;margin-bottom:6px;font-size:0.85rem;
+}
+.insight-item.warning { background:rgba(255,165,0,0.08); border-left:3px solid #ffa500; }
+.insight-item.success { background:rgba(0,200,83,0.08); border-left:3px solid #00c853; }
+.insight-item.info { background:rgba(100,149,237,0.08); border-left:3px solid cornflowerblue; }
+.insight-item.motivation { background:rgba(255,105,180,0.08); border-left:3px solid hotpink; }
+.review-chip {
+  display:inline-flex;align-items:center;gap:6px;padding:4px 10px;
+  background:rgba(255,255,255,0.05);border-radius:20px;font-size:0.75rem;margin:2px;
+}
+.review-chip.critical { background:rgba(255,68,68,0.12); border:1px solid rgba(255,68,68,0.2); }
+.review-chip.high { background:rgba(255,165,0,0.1); border:1px solid rgba(255,165,0,0.15); }
+</style>
+
+<script>
+async function loadDailyPlan() {
+  const section = document.getElementById('daily-plan-section');
+  const loading = document.getElementById('daily-plan-loading');
+  const content = document.getElementById('daily-plan-content');
+  if (!section) return;
+  section.style.display = 'block';
+  try {
+    const res = await fetch('/api/learner/daily_plan');
+    const plan = await res.json();
+    loading.style.display = 'none';
+    content.style.display = 'block';
+
+    if (plan.goals && Object.keys(plan.goals).length) {
+      const goalsHtml = Object.entries(plan.goals).map(([k, v]) => {
+        const icons = {review_target:'🔄', new_word_target:'📚', practice_minutes:'⏱️', urgent_words:'⚠️'};
+        const labels = {review_target:'Words to Review', new_word_target:'New Words', practice_minutes:'Practice (min)', urgent_words:'Overdue'};
+        return `<div class="goal-badge"><span class="goal-icon">${icons[k]||'📌'}</span><span class="goal-label">${labels[k]||k}</span><span class="goal-value">${v}</span></div>`;
+      }).join('');
+      document.getElementById('goals-grid').innerHTML = goalsHtml;
+    }
+
+    if (plan.insights && plan.insights.length) {
+      document.getElementById('insights-container').innerHTML = plan.insights.map(i =>
+        `<div class="insight-item ${i.level}"><span>${i.level === 'warning' ? '⚠️' : i.level === 'success' ? '✅' : i.level === 'motivation' ? '🔥' : '💡'}</span>${i.message}</div>`
+      ).join('');
+    }
+
+    if (plan.reviews && plan.reviews.length) {
+      const top5 = plan.reviews.slice(0, 5);
+      document.getElementById('top-reviews-container').innerHTML =
+        '<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;"><span style="font-size:0.8rem;color:var(--text-2);margin-right:6px;">Top priority:</span>' +
+        top5.map(r => `<span class="review-chip ${r.priority}">${r.word} <span style="font-size:0.65rem;color:var(--text-2);">${r.forgetting_risk.toFixed(0)}%</span></span>`).join('') +
+        (plan.reviews.length > 5 ? `<span style="font-size:0.75rem;color:var(--text-2);margin-left:4px;">+${plan.reviews.length - 5} more</span>` : '') +
+        '</div>';
+    }
+  } catch(e) {
+    loading.textContent = 'Could not load daily plan.';
+    console.error('Daily plan error:', e);
+  }
+}
+loadDailyPlan();
+</script>
+
 <!-- ── Quick Access Tools ──────────────────────────────── -->
-<div class="fade-up-4">
+<div class="fade-up-4" id="quick-tools-section">
   <h2 class="section-title">Quick Tools</h2>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
 
@@ -154,22 +245,40 @@
 {% endblock %}
 
 {% block extra_js %}
+<style>
+.stat-loading { position: relative; overflow: hidden; }
+.stat-loading .stat-value { color: transparent !important; }
+.stat-loading .stat-value::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.04) 100%);
+  background-size: 200% 100%; animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.stat-empty { opacity: 0.4; }
+.activity-feed:empty::after { content: 'No recent activity yet — start practicing!'; display: block; text-align: center; padding: 32px; color: rgba(255,255,255,0.35); font-size: 0.9rem; }
+</style>
 <script>
-// Load stats from API
 async function loadStats() {
+  const statCards = document.querySelectorAll('.stat-card');
+  statCards.forEach(c => c.classList.add('stat-loading'));
   try {
     const res = await fetch('/api/stats');
     const data = await res.json();
     const s = data.stats || {};
+    const hasData = s.total_xp !== undefined || s.streak_days !== undefined;
+    if (!hasData) { statCards.forEach(c => c.classList.add('stat-empty')); }
     if (s.total_xp !== undefined) document.getElementById('total-xp').textContent = s.total_xp.toLocaleString();
     if (s.streak_days !== undefined) document.getElementById('streak').textContent = s.streak_days;
     if (s.words_learned !== undefined) document.getElementById('vocab-count').textContent = s.words_learned;
     if (s.practice_hours !== undefined) document.getElementById('time-spent').textContent = s.practice_hours + 'h';
+    if (s.due_words_today !== undefined) document.getElementById('due-words-count').textContent = s.due_words_today;
   } catch(e) {
-    ['total-xp','streak','vocab-count','time-spent'].forEach(id => {
+    ['total-xp','streak','vocab-count','time-spent','due-words-count'].forEach(id => {
       const el = document.getElementById(id);
-      if (el && el.textContent === '—') el.textContent = '–';
+      if (el && (el.textContent === '—' || el.textContent === '–')) el.textContent = '⚠';
     });
+  } finally {
+    statCards.forEach(c => c.classList.remove('stat-loading'));
   }
 }
 

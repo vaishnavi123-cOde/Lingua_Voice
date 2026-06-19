@@ -10,6 +10,9 @@ from word_validator import WordValidator
 from language_detector import OfflineLanguageDetector
 from conversation_engine import conversation_engine
 from api_service import api_service
+from srs_manager import srs_manager
+from vocabulary_engine import vocabulary_engine
+from learner_intelligence import learner_intelligence
 
 # Initialize OpenAI Service
 try:
@@ -17,13 +20,18 @@ try:
     from openai_service import OpenAIWordService, openai_service as os_svc
     import openai_service
     openai_service.openai_service = OpenAIWordService(OPENAI_API_KEY)
+    vocabulary_engine.openai = openai_service.openai_service
+    from api_service import api_service
+    vocabulary_engine.api = api_service
     print("[APP] OpenAI API initialized successfully")
 except Exception as e:
     print(f"[APP] Warning: Could not initialize OpenAI API: {e}")
     print("[APP] Word meanings will use fallback dictionary APIs")
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "super_secret_key_linguavoice_2024_dev_only")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY")
+if not app.secret_key:
+    raise RuntimeError("FLASK_SECRET_KEY environment variable is required")
 chatbot = AdaptiveChatbot()
 word_validator = WordValidator()
 lang_detector = OfflineLanguageDetector()
@@ -72,7 +80,7 @@ def logout():
 
 @app.route("/health")
 def health_check():
-    health = {"status": "ok", "database": "unknown", "db_path": db.db_name}
+    health = {"status": "ok", "database": "unknown"}
     try:
         conn = db.get_connection()
         cursor = conn.cursor()
@@ -257,17 +265,33 @@ def level_flashcards(level_id):
     cursor = conn.cursor()
     cursor.execute("SELECT target_language FROM users WHERE id=?", (user_id,))
     row = cursor.fetchone()
-    target_language = row[0] if row and row[0] else 'es' # Default to Spanish
+    target_language = row[0] if row and row[0] else 'es'
+    
+    # Get user's existing vocabulary words to exclude duplicates
+    cursor.execute("SELECT word, meaning FROM vocabulary WHERE user_id=? AND language=?", (user_id, target_language))
+    rows = cursor.fetchall()
     conn.close()
     
-    # Generate words for this level
+    exclude_words = set()
+    for word, meaning in rows:
+        if word: exclude_words.add(word.lower())
+        if meaning and len(meaning) < 20:
+            exclude_words.add(meaning.lower().split('|')[0].split('(')[0].strip())
+    
+    # Also exclude words from previously completed levels
+    for l in range(1, level_id):
+        prev_words = session.get(f'level_{l}_words', [])
+        for w in prev_words:
+            if isinstance(w, dict) and w.get('word'):
+                exclude_words.add(w['word'].lower())
+    
     from level_generator import level_generator
-    words = level_generator.generate_level_content(level_id, target_language)
+    words = level_generator.generate_level_content(level_id, target_language, exclude_words=list(exclude_words))
     
     # Store words in session for quiz consistency
     session[f'level_{level_id}_words'] = words
     
-    print(f"[DEBUG] Level {level_id} words ({target_language}): {words}")
+    print(f"[DEBUG] Level {level_id} words ({target_language}): {[w.get('word') for w in words]}")
     
     return render_template("flashcards.html", user_name=user_name, level_id=level_id, words=words)
 @app.route("/learning/level/<int:level_id>/quiz")
@@ -281,6 +305,12 @@ def learning_page():
     if not is_logged_in(): return redirect("/login")
     user_name = session.get("user_name", "User")
     return render_template("learning_modern.html", user_name=user_name)
+
+@app.route("/reviews")
+def review_center():
+    if not is_logged_in(): return redirect("/login")
+    user_name = session.get("user_name", "User")
+    return render_template("review_center.html", user_name=user_name)
 
 @app.route("/analytics")
 def analytics_page():
@@ -368,7 +398,34 @@ def ai_tutor_page():
 def certificate_page():
     if not is_logged_in(): return redirect("/login")
     user_name = session.get("user_name", "User")
-    return render_template("certificate.html", user_name=user_name, language_name="Spanish", total_xp=5200)
+    user_id = get_current_user_id()
+    
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    
+    # Get target language
+    cursor.execute("SELECT target_language FROM users WHERE id=?", (user_id,))
+    row = cursor.fetchone()
+    target_language = row[0] if row and row[0] else 'en'
+    
+    # Get actual total XP from user_progress
+    cursor.execute("""
+        SELECT COALESCE(SUM(total_xp), 0) FROM user_progress WHERE user_id=?
+    """, (user_id,))
+    total_xp = cursor.fetchone()[0]
+    if not total_xp:
+        # Fallback: sum XP from completed levels
+        cursor.execute("""
+            SELECT COALESCE(SUM(xp_earned), 0) FROM user_completed_levels WHERE user_id=? AND passed=1
+        """, (user_id,))
+        total_xp = cursor.fetchone()[0] or 0
+    
+    conn.close()
+    
+    language_names = {'en': 'English', 'es': 'Spanish', 'hi': 'Hindi', 'fr': 'French', 'de': 'German'}
+    language_name = language_names.get(target_language, target_language.capitalize())
+    
+    return render_template("certificate.html", user_name=user_name, language_name=language_name, total_xp=total_xp)
 
 @app.route("/api/save_level_progress", methods=["POST"])
 def save_level_progress():
@@ -429,20 +486,19 @@ def update_all_meanings():
         return jsonify({"error": "Not logged in"}), 401
     
     try:
-        conn = sqlite3.connect('lingua_voice.db')
+        conn = db.get_connection()
         cursor = conn.cursor()
         
         cursor.execute("""
             SELECT word, language, meaning 
             FROM vocabulary 
-            WHERE user_name = ?
-        """, (session.get('user_name'),))
+            WHERE user_id = ?
+        """, (user_id,))
         
         words = cursor.fetchall()
         updated_count = 0
         
         for word, language, current_meaning in words:
-            # Skip if already has good meaning
             if current_meaning and len(current_meaning) > 20 and 'pending' not in current_meaning.lower() and 'uplabdh' not in current_meaning:
                 continue
             
@@ -453,8 +509,8 @@ def update_all_meanings():
                 cursor.execute("""
                     UPDATE vocabulary 
                     SET meaning = ? 
-                    WHERE user_name = ? AND word = ? AND language = ?
-                """, (new_meaning, session.get('user_name'), word, language))
+                    WHERE user_id = ? AND word = ? AND language = ?
+                """, (new_meaning, user_id, word, language))
                 updated_count += 1
                 print(f"[API] ✓ {word}: {new_meaning[:50]}...")
         
@@ -469,7 +525,7 @@ def update_all_meanings():
 
 def get_transcripts():
     user_id = get_current_user_id()
-    if not user_id: return jsonify([])
+    if not user_id: return jsonify({"error": "Not logged in"}), 401
     
     conn = db.get_connection()
     cursor = conn.cursor()
@@ -530,6 +586,21 @@ def save_manual_transcript():
         transcriber.set_active_user(user_id)
         transcriber.save_transcript(text, language, audio_path="manual_entry")
         
+        # Trigger vocabulary expansion for each transcribed word
+        try:
+            words = text.lower().split()
+            conn = db.get_connection()
+            cursor = conn.cursor()
+            for word in words:
+                cursor.execute("SELECT id FROM vocabulary WHERE user_id = ? AND word = ? AND language = ?",
+                               (user_id, word.strip('.,!?;:\'"()[]{}'), language))
+                row = cursor.fetchone()
+                if row:
+                    vocabulary_engine.expand_vocabulary(user_id, row[0])
+            conn.close()
+        except Exception as e2:
+            print(f"[VOCAB] Expansion error on transcript: {e2}")
+        
         return jsonify({"success": True})
     except Exception as e:
         print(f"[API] Error saving transcript: {e}")
@@ -559,11 +630,277 @@ def get_live_transcripts():
         print(f"[API] Error fetching live transcripts: {e}")
         return jsonify({"transcripts": []})
 
+@app.route("/api/reviews/today")
+def api_reviews_today():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    language = request.args.get('language')
+    words = srs_manager.get_due_words(user_id, language)
+    return jsonify({"due_count": len(words), "words": words})
+
+@app.route("/api/reviews/submit", methods=["POST"])
+def api_reviews_submit():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    data = request.get_json()
+    word_id = data.get("word_id")
+    correct = data.get("correct")
+    response_time_ms = data.get("response_time_ms", 0)
+    if not word_id:
+        return jsonify({"error": "word_id required"}), 400
+    if correct:
+        result = srs_manager.handle_correct(word_id, response_time_ms)
+    else:
+        result = srs_manager.handle_incorrect(word_id, response_time_ms)
+    if result is None:
+        return jsonify({"error": "Word not found"}), 404
+
+    # Record performance analytics
+    try:
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT word, language FROM vocabulary WHERE id = ?", (word_id,))
+        row = cursor.fetchone()
+        if row:
+            word, lang = row
+            chatbot.record_performance(user_id, lang, word, 'review', response_time_ms, correct, 'srs')
+        conn.close()
+    except Exception as e:
+        print(f"[ANALYTICS] Error recording performance: {e}")
+
+    # Auto-expand vocabulary when word is answered correctly (mastery 1+)
+    if correct and result and result.get('mastery', 0) >= 1:
+        try:
+            expansion = vocabulary_engine.expand_vocabulary(get_current_user_id(), word_id)
+            if expansion:
+                result['new_discoveries'] = len(expansion)
+        except Exception as e:
+            print(f"[VOCAB] Expansion error: {e}")
+
+    return jsonify({"success": True, "result": result})
+
+@app.route("/api/reviews/stats")
+def api_reviews_stats():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    stats = srs_manager.get_srs_stats(user_id)
+    due_count = srs_manager.get_due_count(user_id)
+    stats['due_count'] = due_count
+    return jsonify(stats)
+
+@app.route("/api/reviews/combo")
+def api_reviews_combo():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    language = request.args.get('language')
+    combo = srs_manager.get_combo(user_id, language)
+    return jsonify(combo)
+
+@app.route("/api/reviews/achievements")
+def api_reviews_achievements():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    achievements = srs_manager.get_achievements(user_id)
+    return jsonify({"achievements": achievements})
+
+@app.route("/api/reviews/check_achievements", methods=["POST"])
+def api_reviews_check_achievements():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    new_achievements = srs_manager.check_achievements(user_id)
+    return jsonify({"new_achievements": new_achievements})
+
+@app.route("/api/reviews/analytics")
+def api_reviews_analytics():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    analytics = srs_manager.get_analytics(user_id)
+    return jsonify(analytics)
+
+@app.route("/api/reviews/weak_words")
+def api_reviews_weak_words():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    language = request.args.get('language')
+    limit = request.args.get('limit', 10, type=int)
+    words = srs_manager.get_weak_words(user_id, limit, language)
+    return jsonify({"words": words})
+
+@app.route("/api/reviews/complete_session", methods=["POST"])
+def api_reviews_complete_session():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    data = request.get_json() or {}
+    perfect = data.get('perfect', False)
+    new_achievements = srs_manager.check_achievements(user_id)
+
+    # Check perfect session achievement separately
+    if perfect:
+        conn = db.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id FROM achievements WHERE requirement_type = 'perfect_session'
+        """)
+        ach_row = cursor.fetchone()
+        if ach_row:
+            ach_id = ach_row[0]
+            cursor.execute("""
+                INSERT OR IGNORE INTO user_achievements (user_id, achievement_id)
+                VALUES (?, ?)
+            """, (user_id, ach_id))
+            if cursor.rowcount > 0:
+                cursor.execute("SELECT name, description, icon FROM achievements WHERE id = ?", (ach_id,))
+                a = cursor.fetchone()
+                new_achievements.append({'id': ach_id, 'name': a[0], 'icon': a[2], 'description': a[1]})
+        conn.commit()
+        conn.close()
+
+    return jsonify({"new_achievements": new_achievements, "perfect_bonus": srs_manager.PERFECT_BONUS_XP if perfect else 0})
+
+# ============================================================
+# VOCABULARY ENGINE API
+# ============================================================
+
+@app.route("/api/vocab/recommendations")
+def api_vocab_recommendations():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    language = request.args.get('language')
+    limit = request.args.get('limit', 10, type=int)
+    recommendations = vocabulary_engine.get_recommendations(user_id, language, limit)
+    return jsonify({"recommendations": recommendations})
+
+@app.route("/api/vocab/graph")
+def api_vocab_graph():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    language = request.args.get('language')
+    depth = request.args.get('depth', 2, type=int)
+    graph = vocabulary_engine.get_word_graph(user_id, language, depth)
+    return jsonify({"graph": graph})
+
+@app.route("/api/vocab/topics")
+def api_vocab_topics():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    language = request.args.get('language')
+    topics = vocabulary_engine.get_user_topics(user_id, language)
+    return jsonify({"topics": topics})
+
+@app.route("/api/vocab/related/<int:word_id>")
+def api_vocab_related(word_id):
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    related = vocabulary_engine.get_related_words(user_id, word_id)
+    return jsonify({"related": related})
+
+@app.route("/api/vocab/expand/<int:word_id>", methods=["POST"])
+def api_vocab_expand(word_id):
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    result = vocabulary_engine.expand_vocabulary(user_id, word_id)
+    return jsonify({"expanded": result})
+
+@app.route("/api/vocab/discovery/<int:discovery_id>/add", methods=["POST"])
+def api_vocab_discovery_add(discovery_id):
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    result = vocabulary_engine.add_discovery_to_vocabulary(user_id, discovery_id)
+    return jsonify({"success": result is not None, "result": result})
+
+@app.route("/api/vocab/discovery/<int:discovery_id>/view", methods=["POST"])
+def api_vocab_discovery_view(discovery_id):
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    vocabulary_engine.mark_discovery_viewed(discovery_id)
+    return jsonify({"success": True})
+
+@app.route("/api/vocab/discovery_card/<int:discovery_id>")
+def api_vocab_discovery_card(discovery_id):
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, word, language, meaning, source_word, difficulty_level, relation_type, topic
+        FROM vocabulary_discovery WHERE id = ? AND user_id = ?
+    """, (discovery_id, user_id))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"error": "Not found"}), 404
+    word_data = {
+        'id': row[0], 'word': row[1], 'language': row[2], 'meaning': row[3],
+        'source_word': row[4], 'difficulty_level': row[5], 'relation_type': row[6], 'topic': row[7]
+    }
+    card = vocabulary_engine.generate_discovery_card(user_id, word_data)
+    return jsonify({"card": card})
+
+@app.route("/api/vocab/learning_path/<path:topic>")
+def api_vocab_learning_path(topic):
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    language = request.args.get('language', 'en')
+    count = request.args.get('count', 7, type=int)
+    path = vocabulary_engine.generate_learning_path(user_id, topic, language, count)
+    return jsonify({"learning_path": path})
+
+@app.route("/api/vocab/prioritized_reviews")
+def api_vocab_prioritized_reviews():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    language = request.args.get('language')
+    limit = request.args.get('limit', 20, type=int)
+    words = vocabulary_engine.get_prioritized_words(user_id, language, limit)
+    return jsonify({"words": words})
+
+# ============================================================
+# LEARNER INTELLIGENCE ENGINE API
+# ============================================================
+
+@app.route("/api/learner/daily_plan")
+def api_learner_daily_plan():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    language = request.args.get('language')
+    force_refresh = request.args.get('refresh', '').lower() == 'true'
+
+    if not force_refresh:
+        engine = learner_intelligence(user_id)
+        cached = engine.get_cached_plan(language)
+        if cached:
+            return jsonify(cached)
+
+    engine = learner_intelligence(user_id)
+    plan = engine.generate_daily_plan(language)
+    return jsonify(plan)
+
+@app.route("/api/learner/insights")
+def api_learner_insights():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    language = request.args.get('language')
+    engine = learner_intelligence(user_id)
+    plan = engine.generate_daily_plan(language)
+    return jsonify({"insights": plan.get('insights', []), "goals": plan.get('goals', {})})
+
+@app.route("/api/learner/forgetting_curve")
+def api_learner_forgetting_curve():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    language = request.args.get('language')
+    limit = request.args.get('limit', 10, type=int)
+    engine = learner_intelligence(user_id)
+    plan = engine.generate_daily_plan(language)
+    return jsonify({"forgetting_curve": plan.get('forgetting_curve', [])[:limit]})
+
 @app.route("/api/stats")
 def get_stats():
     user_id = get_current_user_id()
-    if not user_id: return jsonify({})
+    if not user_id: return jsonify({"error": "Not logged in"}), 401
     stats = chatbot.get_user_stats(user_id)
+    try:
+        stats['due_words_today'] = srs_manager.get_due_count(user_id)
+    except Exception:
+        stats['due_words_today'] = 0
     return jsonify({"stats": stats})
 
 @app.route("/api/validate_word_manual")
@@ -573,39 +910,60 @@ def validate_manual():
     lang = request.args.get("lang", "en")
     if user_id and word:
         res = word_validator.validate_and_store_word(user_id, word, lang)
+        # Expand vocabulary for validated word
+        if res and res.get('is_valid'):
+            try:
+                conn = db.get_connection()
+                cursor = conn.cursor()
+                cursor.execute("SELECT id FROM vocabulary WHERE user_id = ? AND word = ? AND language = ?",
+                               (user_id, word.lower(), lang))
+                row = cursor.fetchone()
+                conn.close()
+                if row:
+                    vocabulary_engine.expand_vocabulary(user_id, row[0])
+            except Exception as e:
+                print(f"[VOCAB] Expansion error on validate: {e}")
         return jsonify(res)
     return jsonify({"error": "Missing params"})
 
 @app.route("/api/get_my_spoken_words")
 def get_my_spoken_words():
     user_id = get_current_user_id()
-    if not user_id: return jsonify([])
+    if not user_id: return jsonify({"error": "Not logged in"}), 401
     words = word_validator.get_user_words(user_id)
     return jsonify(words)
 
 @app.route("/api/get_vocabulary_bank_full")
 def get_vocab_bank_full():
     user_id = get_current_user_id()
-    if not user_id: return jsonify([])
+    if not user_id: return jsonify({"error": "Not logged in"}), 401
     words = word_validator.get_user_words(user_id)
+    # Enrich with topic data
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    for w in words:
+        wid = w.get('id')
+        if wid:
+            cursor.execute("SELECT topic FROM word_topics WHERE word_id = ?", (wid,))
+            row = cursor.fetchone()
+            w['topic'] = row[0] if row else None
+    conn.close()
     return jsonify(words)
 
 @app.route("/api/get_oov_words")
 def get_oov_words_route():
     user_id = get_current_user_id()
-    if not user_id: return jsonify([])
+    if not user_id: return jsonify({"error": "Not logged in"}), 401
     oov_words = chatbot.get_oov_words(user_id)
     return jsonify(oov_words)
 @app.route("/validate_word")
 def validate_word_route():
     user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"error": "Not logged in"}), 401
     word = request.args.get("word")
     lang = request.args.get("lang", "en")
     
-    if not user_id and request.args.get("user") == "default_user":
-        res = word_validator.validate_and_store_word(999, word, lang)
-        return jsonify(res)
-        
     if user_id and word:
         res = word_validator.validate_and_store_word(user_id, word, lang)
         return jsonify(res)
@@ -614,7 +972,7 @@ def validate_word_route():
 @app.route("/api/auto_generate_vocab")
 def auto_gen_vocab():
     user_id = get_current_user_id()
-    if not user_id: return jsonify([])
+    if not user_id: return jsonify({"error": "Not logged in"}), 401
     
     import random
     
@@ -654,7 +1012,7 @@ def auto_gen_vocab():
     # Generate 1-N new words based on count param
     try:
         count_param = int(request.args.get('count', 1))
-    except:
+    except (ValueError, TypeError):
         count_param = 1
         
     num_words = min(count_param, len(available_words))

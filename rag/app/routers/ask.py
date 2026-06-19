@@ -132,6 +132,7 @@ def ask_question_stream(request: QuestionRequest):
             }
             for r in results
         ]
+        stream_start = time.perf_counter()
 
         async def generate():
             answer_chunks = []
@@ -139,7 +140,7 @@ def ask_question_stream(request: QuestionRequest):
                 answer_chunks.append(chunk)
                 yield chunk
             answer = "".join(answer_chunks)
-            total_time = (time.perf_counter() - time.time()) * 1000
+            total_time = (time.perf_counter() - stream_start) * 1000
             metrics_collector.record_response(
                 question=question,
                 answer=answer,

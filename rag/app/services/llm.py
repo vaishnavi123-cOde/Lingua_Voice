@@ -39,8 +39,8 @@ class LLMService:
             )
             answer = response["message"]["content"].strip()
         except Exception as e:
-            logger.error("LLM generation failed: %s", e)
-            answer = "I could not generate an answer due to a system error."
+            logger.error("LLM generation failed: %s", e, exc_info=True)
+            raise
         elapsed = (time.perf_counter() - start) * 1000
         return answer, elapsed
 
@@ -61,8 +61,8 @@ class LLMService:
             for chunk in stream:
                 yield chunk["message"]["content"]
         except Exception as e:
-            logger.error("LLM streaming failed: %s", e)
-            yield "I could not generate an answer due to a system error."
+            logger.error("LLM streaming failed: %s", e, exc_info=True)
+            raise
 
 
 llm_service = LLMService()

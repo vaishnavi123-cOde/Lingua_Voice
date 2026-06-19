@@ -24,7 +24,7 @@ class APIService:
         try:
             requests.get("https://httpbin.org/status/200", timeout=2)
             return True
-        except:
+        except Exception:
             return False
     
     # ==================== FREE DICTIONARY API ====================

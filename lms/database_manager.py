@@ -10,7 +10,10 @@ class DatabaseManager:
         self.init_db()
 
     def get_connection(self):
-        return sqlite3.connect(self.db_name, check_same_thread=False)
+        conn = sqlite3.connect(self.db_name, check_same_thread=False)
+        conn.execute("PRAGMA foreign_keys = ON")
+        conn.execute("PRAGMA journal_mode = WAL")
+        return conn
 
     def init_db(self):
         # Create directory if it doesn't exist (useful for persistent volumes like /app/data)
@@ -83,6 +86,185 @@ class DatabaseManager:
             )
         """)
 
+        # -- SRS migration: add columns safely
+        for col, col_def in [
+            ('next_review', 'DATE'),
+            ('review_interval', 'INTEGER DEFAULT 1'),
+            ('ease_factor', 'REAL DEFAULT 2.5'),
+            ('review_count', 'INTEGER DEFAULT 0')
+        ]:
+            try:
+                cursor.execute(f"ALTER TABLE vocabulary ADD COLUMN {col} {col_def}")
+            except sqlite3.OperationalError:
+                pass  # column already exists
+
+        # 9. SRS Analytics (review tracking)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS srs_reviews (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                word_id INTEGER,
+                word TEXT,
+                language TEXT,
+                review_date DATE DEFAULT CURRENT_DATE,
+                is_correct BOOLEAN,
+                response_time_ms INTEGER DEFAULT 0,
+                ease_factor_before REAL,
+                ease_factor_after REAL,
+                interval_before INTEGER,
+                interval_after INTEGER,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                FOREIGN KEY (word_id) REFERENCES vocabulary (id)
+            )
+        """)
+
+        # 10. SRS Daily Summary (for analytics dashboard)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS srs_daily_summary (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                date DATE DEFAULT CURRENT_DATE,
+                reviews_completed INTEGER DEFAULT 0,
+                correct_count INTEGER DEFAULT 0,
+                incorrect_count INTEGER DEFAULT 0,
+                total_xp_earned INTEGER DEFAULT 0,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                UNIQUE(user_id, date)
+            )
+        """)
+
+        # 11. Review Streaks (for combo tracking)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS review_streaks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                language TEXT,
+                current_streak INTEGER DEFAULT 0,
+                longest_streak INTEGER DEFAULT 0,
+                last_review_date DATE,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                UNIQUE(user_id, language)
+            )
+        """)
+
+        # 12. Achievements Catalog
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS achievements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT UNIQUE,
+                description TEXT,
+                icon TEXT,
+                requirement_type TEXT,
+                requirement_value INTEGER
+            )
+        """)
+
+        # 13. User Achievements (earned badges)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS user_achievements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                achievement_id INTEGER,
+                earned_date DATE DEFAULT CURRENT_DATE,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                FOREIGN KEY (achievement_id) REFERENCES achievements (id),
+                UNIQUE(user_id, achievement_id)
+            )
+        """)
+
+        # 14. Review Analytics (detailed per-word performance)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS review_analytics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                word_id INTEGER,
+                word TEXT,
+                language TEXT,
+                total_reviews INTEGER DEFAULT 0,
+                correct_count INTEGER DEFAULT 0,
+                incorrect_count INTEGER DEFAULT 0,
+                avg_response_time REAL DEFAULT 0,
+                last_reviewed DATE,
+                difficulty_score REAL DEFAULT 0,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                FOREIGN KEY (word_id) REFERENCES vocabulary (id),
+                UNIQUE(user_id, word_id)
+            )
+        """)
+
+        # Add combo_count column to srs_daily_summary if not exists
+        try:
+            cursor.execute("ALTER TABLE srs_daily_summary ADD COLUMN combo_count INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+
+        # Seed achievements if empty
+        cursor.execute("SELECT COUNT(*) FROM achievements")
+        if cursor.fetchone()[0] == 0:
+            achievements_data = [
+                ('First Review', 'Complete your first review', '🌟', 'total_reviews', 1),
+                ('Dedicated Learner', 'Complete 10 reviews', '🔥', 'total_reviews', 10),
+                ('Word Collector', 'Complete 50 reviews', '📚', 'total_reviews', 50),
+                ('Centurion', 'Complete 100 reviews', '💪', 'total_reviews', 100),
+                ('Week Warrior', '7-day review streak', '📅', 'streak_days', 7),
+                ('Month Master', '30-day review streak', '👑', 'streak_days', 30),
+                ('Perfect Session', 'Get 100% accuracy in a session (10+ reviews)', '✨', 'perfect_session', 1),
+                ('Combo King', 'Get a 10-word combo streak', '🔥', 'combo_streak', 10),
+                ('Speed Demon', 'Average response time under 3 seconds', '⚡', 'speed_demon', 1),
+                ('Vocabulary Master', 'Master 50 words (mastery level 5)', '🏆', 'mastered_words', 50),
+            ]
+            cursor.executemany(
+                "INSERT INTO achievements (name, description, icon, requirement_type, requirement_value) VALUES (?, ?, ?, ?, ?)",
+                achievements_data
+            )
+
+        # 15. Vocabulary Knowledge Graph (word relations)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS vocabulary_relations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                word_id_1 INTEGER,
+                word_id_2 INTEGER,
+                relation_type TEXT,
+                strength REAL DEFAULT 0.5,
+                difficulty_level INTEGER DEFAULT 1,
+                created_date DATE DEFAULT CURRENT_DATE,
+                FOREIGN KEY (user_id) REFERENCES users (id),
+                FOREIGN KEY (word_id_1) REFERENCES vocabulary (id),
+                FOREIGN KEY (word_id_2) REFERENCES vocabulary (id),
+                UNIQUE(user_id, word_id_1, word_id_2, relation_type)
+            )
+        """)
+
+        # 16. Word Topics / Categories
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS word_topics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                word_id INTEGER,
+                topic TEXT,
+                FOREIGN KEY (word_id) REFERENCES vocabulary (id),
+                UNIQUE(word_id)
+            )
+        """)
+
+        # 17. Vocabulary Discovery Queue (AI-generated suggestions)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS vocabulary_discovery (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                word TEXT,
+                language TEXT,
+                meaning TEXT,
+                source_word TEXT,
+                difficulty_level INTEGER DEFAULT 1,
+                relation_type TEXT,
+                topic TEXT DEFAULT 'General',
+                viewed INTEGER DEFAULT 0,
+                created_date DATE DEFAULT CURRENT_DATE,
+                FOREIGN KEY (user_id) REFERENCES users (id)
+            )
+        """)
+
         # 5. User Global Progress (Keep existing)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS user_progress (
@@ -143,6 +325,36 @@ class DatabaseManager:
             )
         """)
 
+        # -- Performance indexes for hot query paths
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_vocabulary_user_language ON vocabulary(user_id, language)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_vocabulary_user_review ON vocabulary(user_id, next_review)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_transcripts_user ON transcripts(user_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_srs_reviews_user_word ON srs_reviews(user_id, word_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_vocab_relations_u1 ON vocabulary_relations(user_id, word_id_1)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_vocab_relations_u2 ON vocabulary_relations(user_id, word_id_2)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_learning_sessions_user_date ON learning_sessions(user_id, session_date)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_progress_user ON user_progress(user_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_review_analytics_user_word ON review_analytics(user_id, word_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_vocab_discovery_user_viewed ON vocabulary_discovery(user_id, viewed)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_word_topics_word ON word_topics(word_id)")
+
+        # 18. Learner Daily Plans (cached intelligence engine output)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS learner_daily_plans (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                plan_date DATE,
+                review_words TEXT,
+                new_words TEXT,
+                focus_skills TEXT,
+                goals TEXT,
+                insights TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                UNIQUE(user_id, plan_date)
+            )
+        """)
+
         # 8. Lessons
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS lessons (
@@ -193,6 +405,27 @@ class DatabaseManager:
                 lessons_data
             )
 
+        # -- FK integrity cleanup: remove orphaned records
+        cursor.execute("DELETE FROM transcripts WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
+        cursor.execute("DELETE FROM vocabulary WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
+        cursor.execute("DELETE FROM srs_reviews WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
+        cursor.execute("DELETE FROM srs_reviews WHERE word_id IS NOT NULL AND word_id NOT IN (SELECT id FROM vocabulary)")
+        cursor.execute("DELETE FROM srs_daily_summary WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
+        cursor.execute("DELETE FROM review_streaks WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
+        cursor.execute("DELETE FROM user_achievements WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
+        cursor.execute("DELETE FROM user_achievements WHERE achievement_id IS NOT NULL AND achievement_id NOT IN (SELECT id FROM achievements)")
+        cursor.execute("DELETE FROM vocabulary_relations WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
+        cursor.execute("DELETE FROM vocabulary_relations WHERE word_id_1 IS NOT NULL AND word_id_1 NOT IN (SELECT id FROM vocabulary)")
+        cursor.execute("DELETE FROM vocabulary_relations WHERE word_id_2 IS NOT NULL AND word_id_2 NOT IN (SELECT id FROM vocabulary)")
+        cursor.execute("DELETE FROM word_topics WHERE word_id IS NOT NULL AND word_id NOT IN (SELECT id FROM vocabulary)")
+        cursor.execute("DELETE FROM vocabulary_discovery WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
+        cursor.execute("DELETE FROM learning_sessions WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
+        cursor.execute("DELETE FROM user_progress WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
+        cursor.execute("DELETE FROM oov_words WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
+        cursor.execute("DELETE FROM user_completed_levels WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
+        cursor.execute("DELETE FROM review_analytics WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
+        cursor.execute("DELETE FROM review_analytics WHERE word_id IS NOT NULL AND word_id NOT IN (SELECT id FROM vocabulary)")
+
         conn.commit()
         conn.close()
 
@@ -217,8 +450,7 @@ class DatabaseManager:
         # Add target_language to selection
         try:
             cursor.execute("SELECT id, password_hash, name, target_language FROM users WHERE email=?", (email,))
-        except:
-            # Fallback if column doesn't exist yet (migration)
+        except sqlite3.OperationalError:
             cursor.execute("SELECT id, password_hash, name FROM users WHERE email=?", (email,))
             
         user = cursor.fetchone()
@@ -234,7 +466,7 @@ class DatabaseManager:
         cursor = conn.cursor()
         try:
             cursor.execute("SELECT id, name, email, target_language FROM users WHERE id=?", (user_id,))
-        except:
+        except sqlite3.OperationalError:
              cursor.execute("SELECT id, name, email FROM users WHERE id=?", (user_id,))
              
         user = cursor.fetchone()
