@@ -5,6 +5,7 @@ import time
 from threading import Lock
 from database_manager import db
 from api_service import api_service
+from srs_manager import srs_manager
 
 class WordValidator:
     def __init__(self):
@@ -102,6 +103,11 @@ class WordValidator:
                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                         (user_id, word.lower(), language, meaning or '', int(is_valid), timestamp, timestamp, source_context)
                     )
+                    new_id = cursor.lastrowid
+                    try:
+                        srs_manager.schedule_new_word(new_id)
+                    except Exception as e:
+                        print(f"[VALIDATOR] Error scheduling SRS for new word: {e}", flush=True)
                     print(f"[VALIDATOR] Inserted: {word} ({language}) - {meaning[:50] if meaning else 'No meaning'}", flush=True)
                 conn.commit()
             except Exception as e:

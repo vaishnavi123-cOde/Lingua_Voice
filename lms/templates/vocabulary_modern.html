@@ -2,15 +2,87 @@
 
 {% block title %}Vocabulary - LinguaVoice{% endblock %}
 {% block page_title %}Vocabulary Bank 📚{% endblock %}
-{% block page_subtitle %}Manage your dictionaries and validate new terms{% endblock %}
+{% block page_subtitle %}Manage your words, discover related vocabulary, and expand your knowledge{% endblock %}
+
+{% block extra_css %}
+<style>
+.vocab-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:24px; }
+.tabs-container { display:flex; gap:4px; }
+.tab-btn { padding:8px 18px; border:1px solid var(--border); background:var(--surface); color:var(--text-2); border-radius:10px; cursor:pointer; font-weight:600; font-size:0.85rem; transition:all 0.2s; }
+.tab-btn:hover { border-color:var(--accent); color:var(--text-1); }
+.tab-btn.active { background:rgba(255,165,0,0.12); border-color:var(--accent); color:var(--accent); }
+.lang-filter { padding:8px 14px; border:1px solid var(--border); background:var(--surface); color:var(--text-1); border-radius:10px; font-size:0.85rem; cursor:pointer; }
+.vocab-section { display:none; }
+.vocab-section.active { display:block; animation:fadeInUp 0.4s ease; }
+.search-box { width:100%; padding:12px 16px; background:var(--surface); border:1px solid var(--border); border-radius:12px; color:var(--text-1); font-size:0.9rem; margin-bottom:16px; }
+.search-box:focus { outline:none; border-color:var(--accent); }
+.vocab-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+.word-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; transition:all 0.2s; }
+.word-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+.word-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.word-title { font-size:1.2rem; font-weight:700; color:var(--text-1); margin:0; }
+.word-lang { background:rgba(255,165,0,0.12); color:var(--accent); padding:2px 10px; border-radius:6px; font-size:0.7rem; font-weight:700; text-transform:uppercase; }
+.word-meaning { font-size:0.85rem; color:var(--text-2); line-height:1.4; }
+.word-footer { font-size:0.75rem; color:var(--text-3); margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+.word-topic { display:inline-block; background:rgba(99,102,241,0.1); color:#818cf8; padding:2px 8px; border-radius:6px; font-size:0.7rem; font-weight:600; }
+
+/* Discovery Cards */
+.discovery-card { background:linear-gradient(135deg,var(--surface),var(--surface2)); border:1px solid var(--border-strong); border-radius:20px; padding:28px; margin-bottom:16px; position:relative; overflow:hidden; }
+.discovery-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#ffa500,#818cf8,#ec4899); }
+.discovery-card .avatar-row { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+.discovery-card .avatar { font-size:2.8rem; animation:companionFloat 3s ease-in-out infinite; }
+.discovery-card .avatar-message { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 16px; font-size:0.9rem; color:var(--text-2); line-height:1.5; flex:1; }
+.discovery-card .avatar-message strong { color:var(--accent); }
+.discovery-card .disc-word { font-size:1.8rem; font-weight:800; color:var(--text-1); margin-bottom:4px; }
+.discovery-card .disc-meaning { font-size:1rem; color:var(--text-2); margin-bottom:12px; }
+.discovery-card .disc-detail { font-size:0.8rem; color:var(--text-3); margin-bottom:4px; }
+.discovery-card .disc-actions { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+.discovery-card .btn-disc { padding:10px 24px; border-radius:50px; font-weight:700; font-size:0.85rem; cursor:pointer; border:none; transition:all 0.2s; }
+.btn-disc-primary { background:linear-gradient(135deg,#ffa500,#ff6b00); color:#fff; }
+.btn-disc-primary:hover { transform:translateY(-2px); box-shadow:0 4px 20px rgba(255,165,0,0.3); }
+.btn-disc-secondary { background:var(--surface2); border:1px solid var(--border) !important; color:var(--text-2); }
+.btn-disc-secondary:hover { border-color:var(--accent); color:var(--text-1); }
+
+/* Recommendations */
+.rec-card { display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 18px; transition:all 0.2s; cursor:pointer; }
+.rec-card:hover { border-color:var(--accent); transform:translateX(4px); }
+.rec-card .rec-icon { font-size:1.5rem; width:40px; height:40px; display:flex; align-items:center; justify-content:center; background:rgba(255,165,0,0.1); border-radius:10px; }
+.rec-card .rec-word { font-size:1.1rem; font-weight:700; color:var(--text-1); }
+.rec-card .rec-source { font-size:0.75rem; color:var(--text-3); }
+.rec-card .rec-meaning { font-size:0.8rem; color:var(--text-2); }
+.rec-card .rec-add { margin-left:auto; padding:6px 16px; border-radius:50px; background:rgba(255,165,0,0.12); border:1px solid rgba(255,165,0,0.2); color:var(--accent); font-weight:700; font-size:0.75rem; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+.rec-card .rec-add:hover { background:rgba(255,165,0,0.2); }
+
+/* Learning Path */
+.path-section { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:16px; }
+.path-title { font-size:1.1rem; font-weight:700; color:var(--text-1); margin-bottom:4px; }
+.path-subtitle { font-size:0.85rem; color:var(--text-2); margin-bottom:14px; }
+.path-word { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:10px; background:var(--surface2); margin-bottom:6px; transition:all 0.2s; }
+.path-word:hover { background:rgba(255,165,0,0.08); }
+.path-word .pw-num { width:24px; height:24px; border-radius:50%; background:rgba(255,165,0,0.15); color:var(--accent); display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; }
+.path-word .pw-word { font-weight:600; color:var(--text-1); flex:1; }
+.path-word .pw-reason { font-size:0.75rem; color:var(--text-3); }
+
+/* Knowledge Graph mini */
+.graph-hint { font-size:0.8rem; color:var(--text-3); padding:8px; background:var(--surface2); border-radius:8px; margin-top:8px; }
+
+@keyframes companionFloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
+@keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes slideIn { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
+.empty-state { text-align:center; padding:40px 20px; color:var(--text-3); }
+.empty-state .empty-icon { font-size:3rem; margin-bottom:12px; }
+
+@media (max-width:768px) { .vocab-grid { grid-template-columns:1fr; } .discovery-card { padding:20px; } }
+</style>
+{% endblock %}
 
 {% block content %}
-<!-- Language Filter -->
 <div class="vocab-header">
     <div class="tabs-container">
-        <button class="tab-btn active" onclick="switchTab('my-words')">My Words</button>
-        <button class="tab-btn" onclick="switchTab('oov')">OOV</button>
-        <button class="tab-btn" onclick="switchTab('discover')">Discover</button>
+        <button class="tab-btn active" onclick="switchTab('my-words',event)">My Words</button>
+        <button class="tab-btn" onclick="switchTab('for-you',event)">For You ✨</button>
+        <button class="tab-btn" onclick="switchTab('oov',event)">OOV</button>
+        <button class="tab-btn" onclick="switchTab('discover',event)">Discover</button>
     </div>
     <select id="vocab-lang-filter" onchange="filterByLanguage()" class="lang-filter">
         <option value="all">All Languages</option>
@@ -20,37 +92,40 @@
     </select>
 </div>
 
-<!-- My Words Section -->
+<!-- MY WORDS -->
 <div id="my-words" class="vocab-section active">
-    <input type="text" class="search-box" id="my-vocab-search" placeholder="Search your vocabulary...">
-    <div id="my-vocab-grid" class="vocab-grid">
-        <p class="text-muted">Loading...</p>
-    </div>
+    <input type="text" class="search-box" id="my-vocab-search" placeholder="Search your vocabulary..." oninput="renderMyVocab()">
+    <div id="my-vocab-grid" class="vocab-grid"><p class="text-muted">Loading...</p></div>
 </div>
 
-<!-- OOV Section -->
+<!-- FOR YOU (Recommendations) -->
+<div id="for-you" class="vocab-section">
+    <div id="fy-content"><div class="empty-state"><div class="empty-icon">✨</div><p>Loading recommendations...</p></div></div>
+</div>
+
+<!-- OOV -->
 <div id="oov" class="vocab-section">
-    <div class="info-card">
-        <h3 class="card-title">Out of Vocabulary</h3>
-        <p class="text-muted">Terms detected in speech that are not yet in your validated dictionary.</p>
+    <div class="info-card" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;">
+        <h3 style="font-weight:700;margin-bottom:4px;color:var(--text-1);">Out of Vocabulary</h3>
+        <p style="color:var(--text-2);font-size:0.85rem;">Terms detected in speech that are not yet in your validated dictionary.</p>
     </div>
     <div id="oov-grid" class="vocab-grid"></div>
 </div>
 
-<!-- Discover Section -->
+<!-- DISCOVER -->
 <div id="discover" class="vocab-section">
-    <div class="discover-header">
+    <div class="discover-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
         <div>
-            <h3 class="card-title">Discovery Mode</h3>
-            <p id="learn-status" class="text-muted">Generating stream...</p>
+            <h3 style="font-weight:700;color:var(--text-1);">Discovery Mode</h3>
+            <p id="learn-status" style="color:var(--text-2);font-size:0.85rem;">Generating stream...</p>
         </div>
-        <div class="discover-controls">
-            <select id="learn-lang-select" onchange="restartLearning()" class="lang-select">
+        <div style="display:flex;gap:8px;">
+            <select id="learn-lang-select" onchange="restartLearning()" class="lang-filter">
                 <option value="en">English</option>
                 <option value="es">Spanish</option>
                 <option value="hi">Hindi</option>
             </select>
-            <button class="btn btn-secondary" onclick="toggleLearningLoop()" id="learn-toggle-btn">Pause</button>
+            <button class="btn btn-secondary" onclick="toggleLearningLoop()" id="learn-toggle-btn" style="padding:8px 16px;border-radius:10px;">Pause</button>
         </div>
     </div>
     <div id="learn-grid" class="vocab-grid"></div>
@@ -59,159 +134,337 @@
 
 {% block extra_js %}
 <script>
-    let myVocab = [];
-    let oovWords = [];
-    let learnLoopInterval = null;
+let myVocab = [];
+let oovWords = [];
+let learnLoopInterval = null;
 
-    document.addEventListener('DOMContentLoaded', () => {
-        loadVocabulary();
-        loadOOV();
-    });
+document.addEventListener('DOMContentLoaded', () => {
+    loadVocabulary();
+    loadOOV();
+});
 
-    function switchTab(tabId) {
-        // Update buttons
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        event.currentTarget.classList.add('active');
-        
-        // Update sections
-        document.querySelectorAll('.vocab-section').forEach(section => section.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
-        
-        // Handle learning loop
-        if (tabId === 'discover' && !learnLoopInterval) {
-            startLearningLoop();
-        } else if (tabId !== 'discover') {
-            stopLearningLoop();
-        }
-    }
+// ============================
+// TAB SWITCHING
+// ============================
+function switchTab(tabId, e) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+    document.querySelectorAll('.vocab-section').forEach(s => s.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
 
-    async function loadVocabulary() {
-        try {
-            const res = await fetch('/api/get_vocabulary_bank_full');
-            myVocab = await res.json();
-            renderMyVocab();
-        } catch (e) {
-            console.error('Error loading vocab:', e);
-        }
-    }
+    if (tabId === 'discover') { if (!learnLoopInterval) startLearningLoop(); }
+    else if (tabId === 'for-you') { loadRecommendations(); stopLearningLoop(); }
+    else { stopLearningLoop(); }
+}
 
-    function filterByLanguage() {
+// ============================
+// MY WORDS
+// ============================
+async function loadVocabulary() {
+    try {
+        const res = await fetch('/api/get_vocabulary_bank_full');
+        myVocab = await res.json();
         renderMyVocab();
-        loadOOV();
+    } catch(e) { console.error('Error loading vocab:', e); }
+}
+
+function filterByLanguage() { renderMyVocab(); loadOOV(); }
+
+function renderMyVocab() {
+    const q = document.getElementById('my-vocab-search').value.toLowerCase();
+    const lf = document.getElementById('vocab-lang-filter').value;
+    const container = document.getElementById('my-vocab-grid');
+
+    let filtered = myVocab.filter(w => w.word.toLowerCase().includes(q));
+    if (lf !== 'all') filtered = filtered.filter(w => w.language === lf);
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-3);padding:20px;">No words found.</p>';
+        return;
     }
-    
-    function renderMyVocab() {
-        const query = document.getElementById('my-vocab-search').value.toLowerCase();
-        const langFilter = document.getElementById('vocab-lang-filter').value;
-        const container = document.getElementById('my-vocab-grid');
-        
-        let filtered = myVocab.filter(w => w.word.toLowerCase().includes(query));
-        if (langFilter !== 'all') {
-            filtered = filtered.filter(w => w.language === langFilter);
+
+    container.innerHTML = filtered.map(w => `
+        <div class="word-card" style="cursor:pointer;" onclick="showRelated(${w.id},'${w.word}')">
+            <div class="word-header">
+                <h3 class="word-title">${w.word}</h3>
+                <span class="word-lang">${w.language||'en'}</span>
+            </div>
+            <p class="word-meaning">${formatMeaning(w.meaning)}</p>
+            <div class="word-footer" style="display:flex;justify-content:space-between;align-items:center;">
+                <span>Uses: ${w.frequency||1}</span>
+                ${w.topic ? `<span class="word-topic">${w.topic}</span>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+async function showRelated(wordId, word) {
+    try {
+        const res = await fetch(`/api/vocab/related/${wordId}`);
+        const data = await res.json();
+        const related = data.related || [];
+        let msg = `🔗 <strong>${word}</strong> connections: `;
+        if (related.length === 0) msg += 'No related words yet. Learn it a few more times to expand!';
+        else msg += related.map(r => `${r.word} (${r.relation_type})`).join(', ');
+        showToast(msg);
+    } catch(e) {}
+}
+
+function showToast(html) {
+    const existing = document.querySelector('.vocab-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = 'vocab-toast';
+    toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 20px;font-size:0.85rem;color:var(--text-1);z-index:1000;max-width:500px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,0.3);animation:fadeInUp 0.3s ease;';
+    toast.innerHTML = html;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity='0'; toast.style.transition='opacity 0.3s'; setTimeout(()=>toast.remove(),300); }, 4000);
+}
+
+// ============================
+// FOR YOU — RECOMMENDATIONS
+// ============================
+async function loadRecommendations() {
+    const container = document.getElementById('fy-content');
+    const lang = document.getElementById('vocab-lang-filter').value;
+    try {
+        const [recRes, topicsRes, pathRes] = await Promise.all([
+            fetch(`/api/vocab/recommendations?language=${lang === 'all' ? '' : lang}&limit=8`),
+            fetch(`/api/vocab/topics?language=${lang === 'all' ? '' : lang}`),
+            fetch(`/api/vocab/prioritized_reviews?language=${lang === 'all' ? '' : lang}&limit=5`)
+        ]);
+        const rec = await recRes.json();
+        const topics = await topicsRes.json();
+        const prio = await pathRes.json();
+        renderRecommendations(container, rec.recommendations || [], topics.topics || [], prio.words || []);
+    } catch(e) { container.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><p>Failed to load. Try again.</p></div>'; }
+}
+
+function renderRecommendations(container, recommendations, topics, prioritized) {
+    let html = '';
+
+    // Discovery Cards
+    const discoveryCards = recommendations.filter(r => r.id);
+    if (discoveryCards.length > 0) {
+        html += '<h3 style="font-weight:700;color:var(--text-1);margin-bottom:14px;">🎯 Recommended For You</h3>';
+        discoveryCards.slice(0, 3).forEach(r => {
+            html += `
+                <div class="discovery-card">
+                    <div class="avatar-row">
+                        <div class="avatar">🐣</div>
+                        <div class="avatar-message">
+                            Based on <strong>${r.source_word || 'your learning'}</strong>, try this related word!
+                        </div>
+                    </div>
+                    <div class="disc-word">${r.word}</div>
+                    <div class="disc-meaning">${r.meaning || ''}</div>
+                    <div class="disc-detail">🔗 ${r.relation_type || 'related'} · Level ${r.difficulty_level || 1}</div>
+                    <div class="disc-actions">
+                        <button class="btn-disc btn-disc-primary" onclick="addDiscoveryWord(${r.id}, this)">+ Add to Vocabulary</button>
+                        <button class="btn-disc btn-disc-secondary" onclick="dismissDiscovery(${r.id}, this)">Not now</button>
+                    </div>
+                </div>`;
+        });
+    }
+
+    // Quick recommendations list
+    if (discoveryCards.length > 3) {
+        html += '<h4 style="font-weight:600;color:var(--text-2);margin:16px 0 10px;">More suggestions</h4>';
+        html += '<div style="display:grid;gap:8px;">';
+        discoveryCards.slice(3).forEach(r => {
+            html += `
+                <div class="rec-card">
+                    <div class="rec-icon">${r.difficulty_level <= 2 ? '🌱' : r.difficulty_level <= 3 ? '🌿' : '🌳'}</div>
+                    <div>
+                        <div class="rec-word">${r.word}</div>
+                        <div class="rec-meaning">${r.meaning || ''}</div>
+                        ${r.source_word ? `<div class="rec-source">From: ${r.source_word}</div>` : ''}
+                    </div>
+                    <button class="rec-add" onclick="addDiscoveryWord(${r.id}, this)">+ Add</button>
+                </div>`;
+        });
+        html += '</div>';
+    }
+
+    // Learning paths from topics
+    if (topics.length > 0) {
+        html += '<h4 style="font-weight:600;color:var(--text-2);margin:20px 0 10px;">📚 Learning Paths</h4>';
+        topics.filter(t => t.count >= 2).slice(0, 3).forEach(t => {
+            html += `
+                <div class="path-section" onclick="loadLearningPath('${t.topic}')" style="cursor:pointer;">
+                    <div class="path-title">${t.topic}</div>
+                    <div class="path-subtitle">${t.count} words learned · Click to expand</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        ${t.words.slice(0, 5).map(w => `<span style="background:var(--surface2);padding:3px 10px;border-radius:6px;font-size:0.8rem;color:var(--text-2);">${w}</span>`).join('')}
+                    </div>
+                </div>`;
+        });
+    }
+
+    // Prioritized review words
+    if (prioritized.length > 0) {
+        html += '<h4 style="font-weight:600;color:var(--text-2);margin:20px 0 10px;">⚡ Suggested for Review</h4>';
+        html += '<div style="display:grid;gap:8px;">';
+        prioritized.slice(0, 4).forEach(w => {
+            const diffClass = w.difficulty > 0.5 ? 'color:#ef4444;' : 'color:var(--text-2);';
+            html += `
+                <div class="rec-card">
+                    <div class="rec-icon" style="${diffClass}">${w.difficulty > 0.5 ? '⚠️' : '📝'}</div>
+                    <div>
+                        <div class="rec-word">${w.word}</div>
+                        <div class="rec-meaning">Mastery: ${w.mastery_level}/5 · ${w.wrong_count} mistakes</div>
+                    </div>
+                    <a href="/reviews" class="rec-add" style="text-decoration:none;">Review</a>
+                </div>`;
+        });
+        html += '</div>';
+    }
+
+    if (!html) {
+        html = `
+        <div class="empty-state" style="padding:40px 20px;text-align:center;">
+            <div class="empty-icon" style="font-size:3rem;margin-bottom:16px;">🌱</div>
+            <h3 style="color:var(--text-1);margin-bottom:8px;">Start Building Your Vocabulary</h3>
+            <p style="color:var(--text-2);margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto;">
+                Speak words using the microphone, complete reviews, or add words manually to get personalized recommendations.
+            </p>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                <a href="/transcription" style="padding:10px 24px;background:linear-gradient(135deg,#ffa500,#ff6b00);color:#fff;border-radius:50px;text-decoration:none;font-weight:700;">🎤 Start Speaking</a>
+                <a href="/reviews" style="padding:10px 24px;background:var(--surface2);border:1px solid var(--border);color:var(--text-1);border-radius:50px;text-decoration:none;font-weight:700;">📝 Review Words</a>
+                <a href="/learning_path" style="padding:10px 24px;background:var(--surface2);border:1px solid var(--border);color:var(--text-1);border-radius:50px;text-decoration:none;font-weight:700;">📚 Learning Path</a>
+            </div>
+        </div>`;
+    }
+
+    container.innerHTML = html;
+}
+
+async function addDiscoveryWord(id, btn) {
+    btn.textContent = 'Adding...';
+    btn.disabled = true;
+    try {
+        const res = await fetch(`/api/vocab/discovery/${id}/add`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            btn.textContent = '✓ Added!';
+            btn.style.background = 'rgba(34,197,94,0.15)';
+            btn.style.borderColor = 'rgba(34,197,94,0.3)';
+            btn.style.color = '#22c55e';
+            loadVocabulary();
+        } else {
+            btn.textContent = 'Error';
         }
-        
+    } catch(e) { btn.textContent = 'Error'; }
+}
+
+async function dismissDiscovery(id, btn) {
+    await fetch(`/api/vocab/discovery/${id}/view`, { method: 'POST' });
+    const card = btn.closest('.discovery-card, .rec-card');
+    if (card) { card.style.opacity = '0'; card.style.transition = 'opacity 0.3s'; setTimeout(() => card.remove(), 300); }
+}
+
+async function loadLearningPath(topic) {
+    try {
+        const lang = document.getElementById('vocab-lang-filter').value;
+        const res = await fetch(`/api/vocab/learning_path/${encodeURIComponent(topic)}?language=${lang === 'all' ? 'en' : lang}&count=7`);
+        const data = await res.json();
+        const path = data.learning_path || [];
+
+        if (path.length === 0) { showToast('No path generated. Try a different topic.'); return; }
+
+        let html = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-top:12px;">`;
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h4 style="font-weight:700;color:var(--text-1);">🗺️ ${topic} Learning Path</h4>
+            <button class="btn btn-secondary" style="padding:6px 14px;border-radius:8px;font-size:0.8rem;" onclick="this.parentElement.parentElement.remove()">Close</button>
+        </div>`;
+        path.forEach((w, i) => {
+            const stars = '⭐'.repeat(Math.min(w.difficulty || 1, 5));
+            html += `
+                <div class="path-word">
+                    <div class="pw-num">${i + 1}</div>
+                    <div class="pw-word">${w.word}</div>
+                    <div style="font-size:0.7rem;color:var(--text-3);margin-right:8px;">${stars}</div>
+                    <div class="pw-reason">${w.reason || w.meaning || ''}</div>
+                </div>`;
+        });
+        html += '</div>';
+
+        document.getElementById('fy-content').insertAdjacentHTML('beforeend', html);
+    } catch(e) { showToast('Failed to load learning path.'); }
+}
+
+// ============================
+// OOV
+// ============================
+async function loadOOV() {
+    try {
+        const res = await fetch('/api/get_oov_words');
+        oovWords = await res.json();
+        const container = document.getElementById('oov-grid');
+        const lf = document.getElementById('vocab-lang-filter').value;
+        let filtered = oovWords;
+        if (lf !== 'all') filtered = oovWords.filter(w => w.language === lf);
+
         if (filtered.length === 0) {
-            container.innerHTML = '<p style="color: #6b7280;">No words found.</p>';
+            container.innerHTML = '<p style="color:var(--text-3);padding:20px;">No OOV words found.</p>';
             return;
         }
-        
+
         container.innerHTML = filtered.map(w => `
-            <div class="word-card">
+            <div class="word-card" style="border-left:3px solid #f59e0b;">
                 <div class="word-header">
                     <h3 class="word-title">${w.word}</h3>
-                    <span class="word-lang">${w.language}</span>
+                    <span class="word-lang">${w.language||'en'}</span>
                 </div>
-                <p class="word-meaning">${formatMeaning(w.meaning)}</p>
-                <div class="word-footer">Uses: ${w.frequency || 1}</div>
+                <p style="font-size:0.85rem;color:var(--text-2);margin:8px 0;">Language: ${(w.language||'en').toUpperCase()}</p>
+                <button class="tab-btn" onclick="addToVocab('${w.word}', '${w.language}')" style="margin-top:8px;">+ Validate</button>
             </div>
         `).join('');
-    }
+    } catch(e) { console.error('Error loading OOV:', e); }
+}
 
-    async function loadOOV() {
-        try {
-            const res = await fetch('/api/get_oov_words');
-            oovWords = await res.json();
-            const container = document.getElementById('oov-grid');
-            const langFilter = document.getElementById('vocab-lang-filter').value;
-            
-            let filtered = oovWords;
-            if (langFilter !== 'all') {
-                filtered = oovWords.filter(w => w.language === langFilter);
-            }
-            
-            if (filtered.length === 0) {
-                container.innerHTML = '<p style="color: #6b7280;">No OOV words found.</p>';
-                return;
-            }
-            
-            container.innerHTML = filtered.map(w => `
-                <div class="word-card" style="border-left: 3px solid #f59e0b;">
+async function addToVocab(word, lang) {
+    await fetch(`/api/validate_word_manual?word=${word}&lang=${lang}`);
+    loadOOV();
+    loadVocabulary();
+}
+
+// ============================
+// DISCOVER MODE
+// ============================
+function startLearningLoop() {
+    fetchNewWords();
+    learnLoopInterval = setInterval(fetchNewWords, 3000);
+    document.getElementById('learn-toggle-btn').textContent = "Pause";
+}
+function stopLearningLoop() { clearInterval(learnLoopInterval); learnLoopInterval = null; }
+function toggleLearningLoop() {
+    if (learnLoopInterval) { stopLearningLoop(); document.getElementById('learn-toggle-btn').textContent = "Resume"; }
+    else { startLearningLoop(); }
+}
+function restartLearning() {
+    document.getElementById('learn-grid').innerHTML = '<p style="color:var(--text-3);padding:20px;">Refreshing...</p>';
+    stopLearningLoop();
+    startLearningLoop();
+}
+
+async function fetchNewWords() {
+    const lang = document.getElementById('learn-lang-select').value;
+    try {
+        const res = await fetch(`/api/auto_generate_vocab?lang=${lang}&count=5`);
+        const words = await res.json();
+        document.getElementById('learn-grid').innerHTML = words.map(w => `
+            <div class="word-card" style="border-top:3px solid #3b82f6;">
+                <div class="word-header">
                     <h3 class="word-title">${w.word}</h3>
-                    <p style="font-size: 0.875rem; color: #6b7280; margin: 0.5rem 0;">Language: ${w.language.toUpperCase()}</p>
-                    <button class="tab-btn" onclick="addToVocab('${w.word}', '${w.language}')" style="margin-top: 0.75rem;">
-                        + Validate
-                    </button>
+                    <span class="word-lang">${w.language||'en'}</span>
                 </div>
-            `).join('');
-        } catch (e) {
-            console.error('Error loading OOV:', e);
-        }
-    }
+                <p class="word-meaning">${formatMeaning(w.meaning)}</p>
+            </div>
+        `).join('');
+    } catch(e) { console.error('Error fetching words:', e); }
+}
 
-    async function addToVocab(word, lang) {
-        await fetch(`/api/validate_word_manual?word=${word}&lang=${lang}`);
-        loadOOV();
-        loadVocabulary();
-    }
-
-    function startLearningLoop() {
-        fetchNewWords();
-        learnLoopInterval = setInterval(fetchNewWords, 3000);
-        document.getElementById('learn-toggle-btn').textContent = "Pause";
-    }
-
-    function stopLearningLoop() {
-        clearInterval(learnLoopInterval);
-        learnLoopInterval = null;
-    }
-
-    function toggleLearningLoop() {
-        if (learnLoopInterval) {
-            stopLearningLoop();
-            document.getElementById('learn-toggle-btn').textContent = "Resume";
-        } else {
-            startLearningLoop();
-        }
-    }
-
-    function restartLearning() {
-        document.getElementById('learn-grid').innerHTML = '<p>Refreshing...</p>';
-        stopLearningLoop();
-        startLearningLoop();
-    }
-
-    async function fetchNewWords() {
-        const lang = document.getElementById('learn-lang-select').value;
-        try {
-            const res = await fetch(`/api/auto_generate_vocab?lang=${lang}&count=5`);
-            const words = await res.json();
-            
-            document.getElementById('learn-grid').innerHTML = words.map(w => `
-                <div class="word-card" style="border-top: 3px solid #3b82f6;">
-                    <h3 class="word-title">${w.word}</h3>
-                    <p class="word-meaning">${formatMeaning(w.meaning)}</p>
-                </div>
-            `).join('');
-        } catch (e) {
-            console.error('Error fetching words:', e);
-        }
-    }
-
-    function formatMeaning(m) {
-        if (!m) return 'Loading definition...';
-        return m.split('|')[0];
-    }
-
-    document.getElementById('my-vocab-search').addEventListener('input', renderMyVocab);
+function formatMeaning(m) { if (!m) return 'Loading...'; return m.split('|')[0]; }
 </script>
 {% endblock %}
