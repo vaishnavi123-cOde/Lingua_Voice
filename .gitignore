@@ -61,6 +61,7 @@ package-lock.json
 .env
 .env.local
 *.key
+lms/config.py
 
 # --- Docker ---
 .dockerignore

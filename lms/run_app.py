@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 import os
-import sys
-sys.path.insert(0, r'd:\lingua Voice\audio-transcriber-master')
 
 from app import app
 

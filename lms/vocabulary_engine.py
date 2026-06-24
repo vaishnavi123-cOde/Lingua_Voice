@@ -8,6 +8,7 @@ import re
 from datetime import datetime, date, timedelta
 from database_manager import db
 from srs_manager import srs_manager
+from word_validator import is_placeholder
 
 class VocabularyEngine:
     RELATION_TYPES = ['synonym', 'antonym', 'similar', 'associated', 'topic_related',
@@ -834,8 +835,16 @@ class VocabularyEngine:
 
             if not rw_word:
                 continue
-            if not rw_meaning:
-                rw_meaning = f'A word related to "{word}"'
+            if not rw_meaning or is_placeholder(rw_meaning):
+                try:
+                    from api_service import api_service
+                    info = api_service.get_enhanced_word_info(rw_word, language)
+                    if info and info.get('definition') and not is_placeholder(info['definition']):
+                        rw_meaning = info['definition']
+                except Exception:
+                    pass
+                if not rw_meaning or is_placeholder(rw_meaning):
+                    rw_meaning = f'A word related to "{word}"'
 
             # See if word already exists for user
             conn = db.get_connection()
@@ -1000,8 +1009,8 @@ class VocabularyEngine:
             return None
 
         word, language, meaning, source = row
-        from word_validator import word_validator
-        result = word_validator.validate_and_store_word(user_id, word, language, meaning)
+        from word_validator import WordValidator
+        result = WordValidator().validate_and_store_word(user_id, word, language, meaning)
 
         # Mark discovery as viewed
         cursor.execute("UPDATE vocabulary_discovery SET viewed = 1 WHERE id = ?", (discovery_id,))
@@ -1123,7 +1132,7 @@ class VocabularyEngine:
 
         # Words ranked by: forgotten frequently, recently learned, related to mastered, high-frequency
         lang_filter = ""
-        params = [user_id, self._today()]
+        params = [user_id]
         if language:
             lang_filter = "AND v.language = ?"
             params.append(language)

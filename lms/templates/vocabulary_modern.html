@@ -148,9 +148,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // ============================
 function switchTab(tabId, e) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    e.currentTarget.classList.add('active');
+    const btn = e && e.currentTarget || document.querySelector(`.tab-btn[onclick*="${tabId}"]`);
+    if (btn) btn.classList.add('active');
     document.querySelectorAll('.vocab-section').forEach(s => s.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
+    const section = document.getElementById(tabId);
+    if (section) section.classList.add('active');
 
     if (tabId === 'discover') { if (!learnLoopInterval) startLearningLoop(); }
     else if (tabId === 'for-you') { loadRecommendations(); stopLearningLoop(); }
@@ -465,6 +467,13 @@ async function fetchNewWords() {
     } catch(e) { console.error('Error fetching words:', e); }
 }
 
-function formatMeaning(m) { if (!m) return 'Loading...'; return m.split('|')[0]; }
+function formatMeaning(m) {
+    if (!m) return '<span style="color:var(--text-3);font-style:italic;">Definition currently unavailable.</span>';
+    const first = m.split('|')[0].trim();
+    if (!first || first.length < 3 || /^(definition pending|definición pendiente|meaning of|a word related to|learning in progress|unknown|fetching definition)/i.test(first)) {
+        return '<span style="color:var(--text-3);font-style:italic;">Definition currently unavailable.</span>';
+    }
+    return first;
+}
 </script>
 {% endblock %}

@@ -315,17 +315,6 @@ class APIService:
             except Exception as e:
                 print(f"[API_SERVICE] Offline dict error: {e}")
         
-        # Final fallback message
-        fallback_messages = {
-            'en': "Definition pending...",
-            'es': "Definición pendiente...",
-            'hi': "परिभाषा लंबित..."
-        }
-        
-        if not result['definition']:
-            result['definition'] = fallback_messages.get(language, "Definition pending...")
-            result['source'] = 'fallback'
-        
         return result
 
 # Global instance

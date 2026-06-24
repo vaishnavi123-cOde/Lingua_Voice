@@ -849,8 +849,14 @@ def api_vocab_prioritized_reviews():
     user_id = get_current_user_id()
     language = request.args.get('language')
     limit = request.args.get('limit', 20, type=int)
-    words = vocabulary_engine.get_prioritized_words(user_id, language, limit)
-    return jsonify({"words": words})
+    try:
+        words = vocabulary_engine.get_prioritized_words(user_id, language, limit)
+        return jsonify({"words": words})
+    except Exception as e:
+        print(f"[API] Error in prioritized_reviews: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": True, "recommendations": []})
 
 # ============================================================
 # LEARNER INTELLIGENCE ENGINE API
@@ -1026,7 +1032,7 @@ def auto_gen_vocab():
             "word": word,
             "language": lang,
             "source": "Incremental Learning",
-            "meaning": res.get('meaning', 'Learning in progress...')
+            "meaning": res.get('meaning') or None
         })
     
     return jsonify(new_suggestions)

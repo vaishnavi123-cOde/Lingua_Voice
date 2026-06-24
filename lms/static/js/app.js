@@ -54,17 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Tab switching
-    window.switchTab = function(tabId) {
-        const tabs = document.querySelectorAll('.tab-btn');
-        const sections = document.querySelectorAll('.vocab-section');
 
-        tabs.forEach(tab => tab.classList.remove('active'));
-        sections.forEach(section => section.classList.remove('active'));
-
-        document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
-        document.getElementById(tabId).classList.add('active');
-    };
 
     // Language selection
     window.setLanguage = function(lang) {
