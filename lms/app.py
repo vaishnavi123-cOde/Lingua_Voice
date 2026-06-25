@@ -300,6 +300,81 @@ def level_quiz(level_id):
     user_name = session.get("user_name", "User")
     return render_template("quiz.html", user_name=user_name, level_id=level_id)
 
+@app.route("/lesson/continue")
+def lesson_continue():
+    if not is_logged_in(): return redirect("/login")
+    user_id = get_current_user_id()
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT level_id FROM user_completed_levels WHERE user_id=? AND passed=1", (user_id,))
+    completed = [row[0] for row in cursor.fetchall()]
+    cursor.execute("SELECT target_language FROM users WHERE id=?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    lang = row[0] if row and row[0] else 'es'
+    next_level = max(completed) + 1 if completed else 1
+    return redirect(f"/lesson/{next_level}")
+
+@app.route("/lesson/<int:level_id>")
+def lesson_page(level_id):
+    if not is_logged_in(): return redirect("/login")
+    user_id = get_current_user_id()
+    user_name = session.get("user_name", "User")
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT target_language FROM users WHERE id=?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    lang = row[0] if row and row[0] else 'es'
+
+    from lesson_service import compose_lesson
+    lesson_data = compose_lesson(user_id, level_id, lang)
+    if not lesson_data:
+        return redirect("/learning_path")
+
+    return render_template("lesson.html",
+                         user_name=user_name,
+                         lesson_data=lesson_data,
+                         title=lesson_data.get("title", f"Level {level_id}"))
+
+@app.route("/api/lesson/complete", methods=["POST"])
+def lesson_complete():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    user_id = get_current_user_id()
+    data = request.get_json()
+    level_id = data.get("level_id")
+    language = data.get("language")
+    score = data.get("score", 0)
+    total = data.get("total", 1)
+    xp_earned = data.get("xp_earned", 0)
+    word_progress = data.get("word_progress")
+
+    from lesson_service import complete_lesson
+    result = complete_lesson(user_id, level_id, language, score, total, xp_earned, word_progress)
+
+    return jsonify(result)
+
+@app.route("/api/lesson/coach_message", methods=["POST"])
+def lesson_coach_message():
+    if not is_logged_in(): return jsonify({"error": "Not logged in"}), 401
+    data = request.get_json()
+    message = data.get("message", "")
+    word = data.get("word", "")
+    try:
+        from ai_tutor_service import get_ai_tutor_response
+        reply = get_ai_tutor_response(message, "en", "es", [], weak_words=[])
+        return jsonify({"message": reply or "Keep going!"})
+    except Exception:
+        encouragements = [
+            "Great work! Keep practicing!",
+            "You're making excellent progress!",
+            "Don't give up! Consistency is key.",
+            "Fantastic effort! Keep it up!",
+            "You're doing great! Every word counts!",
+        ]
+        import random
+        return jsonify({"message": random.choice(encouragements)})
+
 @app.route("/learning")
 def learning_page():
     if not is_logged_in(): return redirect("/login")

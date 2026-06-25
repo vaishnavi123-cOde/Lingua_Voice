@@ -1,0 +1,665 @@
+{% extends "base_sidebar.html" %}
+{% block title %}{{ title }} - LinguaVoice{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}{{ lesson_data.exercise_count }} exercises · {{ lesson_data.word_count }} words{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/lesson.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="lesson-container">
+
+    <!-- ── Progress Header ────────────────────────────── -->
+    <div class="lesson-header">
+        <a href="/learning_path" class="btn-ghost lesson-back">✕</a>
+        <div class="lesson-progress-bar">
+            <div class="lesson-progress-fill" id="progress-fill" style="width:0%"></div>
+        </div>
+        <span class="lesson-progress-text" id="progress-text">0 / {{ lesson_data.exercise_count }}</span>
+        <div class="lesson-xp-counter" id="xp-counter">+0</div>
+    </div>
+
+    <!-- ── Main Exercise Area + AI Companion ──────────── -->
+    <div class="lesson-body">
+
+        <!-- Exercise Area -->
+        <div class="lesson-exercise-area" id="exercise-area">
+
+            <!-- SRS Review Banner (shown at breakpoints) -->
+            <div id="srs-banner" class="srs-banner" style="display:none;">
+                <div class="srs-banner-icon">🔄</div>
+                <div class="srs-banner-text">Review time! Let's reinforce what you've learned.</div>
+            </div>
+
+            <!-- Exercise Card -->
+            <div class="exercise-card" id="exercise-card">
+
+                <!-- Progress dots for current word -->
+                <div class="word-dots" id="word-dots"></div>
+
+                <!-- Exercise content renders here -->
+                <div id="exercise-content" class="exercise-content">
+                    <div class="exercise-loading">Loading lesson...</div>
+                </div>
+
+                <!-- Answer area -->
+                <div id="answer-area" class="answer-area"></div>
+
+                <!-- Action buttons -->
+                <div class="exercise-actions" id="exercise-actions" style="display:none;">
+                    <button class="btn btn-primary btn-lg" id="check-btn" onclick="checkAnswer()">Check</button>
+                </div>
+            </div>
+
+            <!-- Completion screen (hidden initially) -->
+            <div id="completion-screen" class="completion-screen" style="display:none;">
+                <div class="completion-orb" id="completion-orb">🎉</div>
+                <h2 class="completion-title">Lesson Complete!</h2>
+                <div class="completion-stats">
+                    <div class="completion-stat">
+                        <span class="completion-stat-value" id="completion-score">0%</span>
+                        <span class="completion-stat-label">Accuracy</span>
+                    </div>
+                    <div class="completion-stat">
+                        <span class="completion-stat-value" id="completion-xp">+0</span>
+                        <span class="completion-stat-label">XP Earned</span>
+                    </div>
+                </div>
+                <div class="completion-words" id="completion-words"></div>
+                <div class="completion-actions">
+                    <a href="/learning_path" class="btn btn-secondary">Learning Path</a>
+                    <a href="/lesson/{{ lesson_data.level_id }}" class="btn btn-primary">Next Lesson →</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── AI Companion Panel ──────────────────────── -->
+        <div class="ai-companion-panel" id="ai-panel">
+            <div class="ai-panel-header" onclick="toggleAiPanel()">
+                <div class="ai-orb" id="ai-orb">🤖</div>
+                <span class="ai-panel-title">AI Coach</span>
+                <span class="ai-toggle-icon" id="ai-toggle-icon">◀</span>
+            </div>
+            <div class="ai-panel-body" id="ai-panel-body">
+                <div class="ai-messages" id="ai-messages">
+                    <div class="ai-message ai-message-in">
+                        <div class="ai-avatar">🤖</div>
+                        <div class="ai-bubble">Hi! I'm your coach. Need help with a word? Click Explain, Example, or just ask me!</div>
+                    </div>
+                </div>
+                <div class="ai-quick-actions">
+                    <button class="ai-quick-btn" onclick="aiQuickAction('explain')">💡 Explain</button>
+                    <button class="ai-quick-btn" onclick="aiQuickAction('example')">📝 Example</button>
+                    <button class="ai-quick-btn" onclick="aiQuickAction('encourage')">🔥 Encourage</button>
+                </div>
+                <div class="ai-input-area">
+                    <input type="text" class="ai-input" id="ai-input" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter')aiSendMessage()">
+                    <button class="ai-send-btn" onclick="aiSendMessage()">➤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── XP Float Animation Container ─────────────────── -->
+<div id="xp-float-container" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── State ──────────────────────────────────────────────────────
+const EXERCISES = {{ lesson_data.exercises|tojson|safe }};
+const TOTAL_XP = {{ lesson_data.total_xp }};
+const LEVEL_ID = {{ lesson_data.level_id }};
+const LANGUAGE = '{{ lesson_data.language }}';
+const REVIEW_BREAKPOINTS = {{ lesson_data.review_breakpoints|tojson|safe }};
+
+let currentIndex = 0;
+let score = 0;
+let totalAnswered = 0;
+let xpEarned = 0;
+let wordProgress = [];
+let isChecking = false;
+let currentExercise = null;
+let aiPanelOpen = true;
+let recognition = null;
+
+// ── Init ───────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    renderExercise(0);
+});
+
+// ── Exercise Rendering ─────────────────────────────────────────
+function renderExercise(index) {
+    if (index >= EXERCISES.length) {
+        showCompletion();
+        return;
+    }
+
+    currentIndex = index;
+    currentExercise = EXERCISES[index];
+    isChecking = false;
+
+    updateProgress(index);
+
+    // Check for SRS breakpoint
+    const srsBanner = document.getElementById('srs-banner');
+    if (REVIEW_BREAKPOINTS.includes(index)) {
+        srsBanner.style.display = 'flex';
+        setTimeout(() => { srsBanner.style.display = 'none'; }, 2000);
+    } else {
+        srsBanner.style.display = 'none';
+    }
+
+    const ex = currentExercise;
+    const container = document.getElementById('exercise-content');
+    const answerArea = document.getElementById('answer-area');
+    const actions = document.getElementById('exercise-actions');
+
+    // Update word dots
+    renderWordDots(ex);
+
+    // Clear previous
+    answerArea.innerHTML = '';
+    actions.style.display = 'none';
+
+    const xpBadge = `<div class="exercise-xp-badge">+${ex.xp} XP</div>`;
+
+    switch (ex.type) {
+        case 'learn':
+            container.innerHTML = `
+                ${xpBadge}
+                <div class="ex-learn">
+                    <div class="ex-learn-word">${ex.word}</div>
+                    <div class="ex-learn-meaning">${ex.meaning}</div>
+                    <div class="ex-learn-example">${ex.example || ''}</div>
+                </div>
+                <div class="ex-hint">Read and remember this word.</div>
+            `;
+            answerArea.innerHTML = `<button class="btn btn-primary btn-lg" onclick="nextExercise()">Continue →</button>`;
+            break;
+
+        case 'listen':
+            container.innerHTML = `
+                ${xpBadge}
+                <div class="ex-listen">
+                    <div class="ex-listen-prompt">Listen and select the correct word:</div>
+                    <button class="btn btn-secondary listen-btn" onclick="speakWord('${ex.correct.replace(/'/g,"\\'")}','${ex.language}')">
+                        🔊 Play
+                    </button>
+                </div>
+            `;
+            answerArea.innerHTML = `
+                <div class="ex-options">
+                    ${ex.options.map((opt, i) => `
+                        <button class="option-btn" onclick="selectOption(this, '${opt.replace(/'/g,"\\'")}')" data-value="${opt}">
+                            ${opt}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+            actions.style.display = 'flex';
+            // Auto-play
+            setTimeout(() => speakWord(ex.correct, ex.language), 500);
+            break;
+
+        case 'speak':
+            container.innerHTML = `
+                ${xpBadge}
+                <div class="ex-speak">
+                    <div class="ex-speak-prompt">Say the word:</div>
+                    <div class="ex-speak-word">${ex.word}</div>
+                    <div class="ex-speak-meaning">${ex.meaning}</div>
+                    <button class="btn btn-primary speak-btn" onclick="startSpeechRecognition('${ex.word.replace(/'/g,"\\'")}')">
+                        🎤 Speak
+                    </button>
+                    <div id="speech-result" class="speech-result"></div>
+                </div>
+            `;
+            actions.style.display = 'none';
+            break;
+
+        case 'translate':
+            container.innerHTML = `
+                ${xpBadge}
+                <div class="ex-translate">
+                    <div class="ex-translate-prompt">Translate to ${LANGUAGE === 'en' ? 'Spanish' : 'English'}:</div>
+                    <div class="ex-translate-word">${ex.prompt}</div>
+                </div>
+            `;
+            answerArea.innerHTML = `
+                <input type="text" class="ex-input" id="translate-input" placeholder="Type your answer..." autofocus
+                    onkeydown="if(event.key==='Enter')checkAnswer()">
+            `;
+            actions.style.display = 'flex';
+            setTimeout(() => document.getElementById('translate-input')?.focus(), 100);
+            break;
+
+        case 'sentence':
+            container.innerHTML = `
+                ${xpBadge}
+                <div class="ex-sentence">
+                    <div class="ex-sentence-prompt">Fill in the blank:</div>
+                    <div class="ex-sentence-text">${ex.sentence}</div>
+                </div>
+            `;
+            answerArea.innerHTML = `
+                <input type="text" class="ex-input" id="sentence-input" placeholder="Type the missing word..." autofocus
+                    onkeydown="if(event.key==='Enter')checkAnswer()">
+            `;
+            actions.style.display = 'flex';
+            setTimeout(() => document.getElementById('sentence-input')?.focus(), 100);
+            break;
+
+        case 'recall':
+            container.innerHTML = `
+                ${xpBadge}
+                <div class="ex-recall">
+                    <div class="ex-recall-prompt">What is the word for:</div>
+                    <div class="ex-recall-meaning">${ex.prompt}</div>
+                </div>
+            `;
+            answerArea.innerHTML = `
+                <input type="text" class="ex-input" id="recall-input" placeholder="Type the word..." autofocus
+                    onkeydown="if(event.key==='Enter')checkAnswer()">
+            `;
+            actions.style.display = 'flex';
+            setTimeout(() => document.getElementById('recall-input')?.focus(), 100);
+            break;
+
+        case 'review':
+            container.innerHTML = `
+                <div class="ex-review">
+                    <div class="ex-review-icon">🔄</div>
+                    <div class="ex-review-prompt">Quick review — do you remember this word?</div>
+                    <div class="ex-review-word">${ex.word}</div>
+                    ${ex.meaning ? `<div class="ex-review-meaning">${ex.meaning}</div>` : ''}
+                </div>
+            `;
+            answerArea.innerHTML = `
+                <div class="ex-review-actions">
+                    <button class="btn btn-secondary btn-lg" onclick="handleReview(false)">Still Learning</button>
+                    <button class="btn btn-primary btn-lg" onclick="handleReview(true)">Got it!</button>
+                </div>
+            `;
+            break;
+
+        default:
+            container.innerHTML = `<div class="exercise-loading">Unknown exercise type: ${ex.type}</div>`;
+    }
+}
+
+function renderWordDots(ex) {
+    const dots = document.getElementById('word-dots');
+    if (!ex.word_index && ex.word_index !== 0) {
+        dots.innerHTML = '';
+        return;
+    }
+    // Find exercises for the same word
+    const wordExs = EXERCISES.filter(e => e.word === ex.word);
+    const currentPos = wordExs.indexOf(ex);
+    dots.innerHTML = wordExs.map((_, i) =>
+        `<div class="word-dot ${i < currentPos ? 'done' : i === currentPos ? 'current' : ''}"></div>`
+    ).join('');
+}
+
+// ── Answer Checking ───────────────────────────────────────────
+function selectOption(btn, value) {
+    document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    btn.dataset.selected = 'true';
+}
+
+function checkAnswer() {
+    if (isChecking) return;
+    if (!currentExercise) return;
+
+    const ex = currentExercise;
+    let userAnswer = '';
+    let isCorrect = false;
+
+    switch (ex.type) {
+        case 'listen': {
+            const selected = document.querySelector('.option-btn.selected');
+            if (!selected) {
+                showToast('Please select an answer.');
+                return;
+            }
+            userAnswer = selected.dataset.value;
+            isCorrect = userAnswer.toLowerCase().trim() === ex.correct.toLowerCase().trim();
+            highlightOptions(ex.correct, isCorrect);
+            break;
+        }
+        case 'translate': {
+            const input = document.getElementById('translate-input');
+            if (!input || !input.value.trim()) {
+                showToast('Type your answer.');
+                return;
+            }
+            userAnswer = input.value.trim();
+            isCorrect = userAnswer.toLowerCase() === ex.correct.toLowerCase();
+            showFeedback(isCorrect, ex.correct, userAnswer);
+            break;
+        }
+        case 'sentence': {
+            const input = document.getElementById('sentence-input');
+            if (!input || !input.value.trim()) {
+                showToast('Type the missing word.');
+                return;
+            }
+            userAnswer = input.value.trim();
+            isCorrect = userAnswer.toLowerCase() === ex.correct.toLowerCase();
+            showFeedback(isCorrect, ex.correct, userAnswer);
+            break;
+        }
+        case 'recall': {
+            const input = document.getElementById('recall-input');
+            if (!input || !input.value.trim()) {
+                showToast('Type the word.');
+                return;
+            }
+            userAnswer = input.value.trim();
+            isCorrect = userAnswer.toLowerCase() === ex.correct.toLowerCase();
+            showFeedback(isCorrect, ex.correct, userAnswer);
+            break;
+        }
+        default:
+            return;
+    }
+
+    isChecking = true;
+    totalAnswered++;
+
+    if (isCorrect) {
+        score++;
+        xpEarned += ex.xp;
+        updateXpCounter(ex.xp);
+        spawnXpFloat(ex.xp);
+    }
+
+    // Track word progress
+    trackWordProgress(ex.word, isCorrect);
+
+    document.getElementById('check-btn').textContent = isCorrect ? '✓ Correct' : 'Continue';
+    document.getElementById('check-btn').onclick = () => {
+        if (currentIndex + 1 < EXERCISES.length) {
+            renderExercise(currentIndex + 1);
+        } else {
+            showCompletion();
+        }
+    };
+}
+
+function handleReview(isCorrect) {
+    const ex = currentExercise;
+    totalAnswered++;
+    if (isCorrect) {
+        score++;
+        xpEarned += ex.xp;
+        updateXpCounter(ex.xp);
+    }
+    trackWordProgress(ex.word, isCorrect);
+    if (currentIndex + 1 < EXERCISES.length) {
+        renderExercise(currentIndex + 1);
+    } else {
+        showCompletion();
+    }
+}
+
+function trackWordProgress(word, correct) {
+    const existing = wordProgress.find(w => w.word === word);
+    if (existing) {
+        existing.correct = existing.correct && correct;
+        existing.count++;
+    } else {
+        wordProgress.push({word, correct, count: 1, response_time_ms: 1000});
+    }
+}
+
+function showFeedback(isCorrect, correctAnswer, userAnswer) {
+    const container = document.getElementById('answer-area');
+    const fb = document.createElement('div');
+    fb.className = `feedback-overlay ${isCorrect ? 'feedback-correct' : 'feedback-wrong'}`;
+    fb.innerHTML = isCorrect
+        ? `<div class="feedback-icon">✅</div><div class="feedback-text">Correct!</div>`
+        : `<div class="feedback-icon">❌</div><div class="feedback-text">"${userAnswer}" — correct: "${correctAnswer}"</div>`;
+    container.prepend(fb);
+}
+
+function highlightOptions(correct, isCorrect) {
+    document.querySelectorAll('.option-btn').forEach(btn => {
+        btn.disabled = true;
+        if (btn.dataset.value.toLowerCase() === correct.toLowerCase()) {
+            btn.classList.add('correct');
+        } else if (btn.classList.contains('selected') && !isCorrect) {
+            btn.classList.add('wrong');
+        }
+    });
+}
+
+// ── Speech Recognition ─────────────────────────────────────────
+function startSpeechRecognition(expectedWord) {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        document.getElementById('speech-result').textContent = 'Speech recognition not available in this browser. Try Chrome or Edge.';
+        return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.lang = LANGUAGE === 'es' ? 'es-ES' : LANGUAGE === 'hi' ? 'hi-IN' : 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    document.getElementById('speech-result').textContent = 'Listening...';
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript.toLowerCase().trim();
+        const expected = expectedWord.toLowerCase().trim();
+
+        // Check if expected word appears in transcript or vice versa
+        const isCorrect = transcript.includes(expected) || expected.includes(transcript);
+
+        document.getElementById('speech-result').textContent = isCorrect
+            ? `✅ You said: "${transcript}" — Correct!`
+            : `❌ You said: "${transcript}" — Expected: "${expectedWord}"`;
+
+        if (isCorrect) {
+            score++;
+            xpEarned += currentExercise.xp;
+            updateXpCounter(currentExercise.xp);
+            spawnXpFloat(currentExercise.xp);
+            trackWordProgress(expectedWord, true);
+            totalAnswered++;
+            setTimeout(() => {
+                if (currentIndex + 1 < EXERCISES.length) {
+                    renderExercise(currentIndex + 1);
+                } else {
+                    showCompletion();
+                }
+            }, 1500);
+        } else {
+            totalAnswered++;
+            trackWordProgress(expectedWord, false);
+            setTimeout(() => {
+                if (currentIndex + 1 < EXERCISES.length) {
+                    renderExercise(currentIndex + 1);
+                } else {
+                    showCompletion();
+                }
+            }, 2000);
+        }
+    };
+
+    recognition.onerror = () => {
+        document.getElementById('speech-result').textContent = 'Could not hear clearly. Try again.';
+    };
+
+    recognition.start();
+}
+
+// ── AI Companion ───────────────────────────────────────────────
+function toggleAiPanel() {
+    aiPanelOpen = !aiPanelOpen;
+    document.getElementById('ai-panel').classList.toggle('collapsed', !aiPanelOpen);
+    document.getElementById('ai-toggle-icon').textContent = aiPanelOpen ? '▶' : '◀';
+}
+
+async function aiQuickAction(action) {
+    const word = currentExercise?.word || '';
+    let message = '';
+    switch (action) {
+        case 'explain': message = 'Explain this word to me.'; break;
+        case 'example': message = 'Give me an example sentence.'; break;
+        case 'encourage': message = 'Encourage me!'; break;
+    }
+    addAiMessage(message, 'out');
+    try {
+        const res = await fetch('/api/lesson/coach_message', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message, word, context: LANGUAGE})
+        });
+        const data = await res.json();
+        addAiMessage(data.message || 'Keep going!', 'in');
+    } catch (e) {
+        addAiMessage('You\'re doing great! Keep practicing.', 'in');
+    }
+    setAiOrbState('happy');
+}
+
+async function aiSendMessage() {
+    const input = document.getElementById('ai-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    addAiMessage(text, 'out');
+    try {
+        const res = await fetch('/api/lesson/coach_message', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message: text, word: currentExercise?.word || '', context: LANGUAGE})
+        });
+        const data = await res.json();
+        addAiMessage(data.message || 'Great question! Keep learning.', 'in');
+    } catch (e) {
+        addAiMessage('You\'re making progress every day!', 'in');
+    }
+}
+
+function addAiMessage(text, dir) {
+    const container = document.getElementById('ai-messages');
+    const msg = document.createElement('div');
+    msg.className = `ai-message ai-message-${dir}`;
+    msg.innerHTML = dir === 'in'
+        ? `<div class="ai-avatar">🤖</div><div class="ai-bubble">${text}</div>`
+        : `<div class="ai-bubble ai-bubble-out">${text}</div>`;
+    container.appendChild(msg);
+    container.scrollTop = container.scrollHeight;
+}
+
+function setAiOrbState(state) {
+    const orb = document.getElementById('ai-orb');
+    orb.className = 'ai-orb';
+    if (state === 'happy') orb.classList.add('ai-orb-happy');
+    else if (state === 'thinking') orb.classList.add('ai-orb-thinking');
+}
+
+// ── Progress & UI Updates ─────────────────────────────────────
+function updateProgress(index) {
+    const pct = EXERCISES.length > 0 ? (index / EXERCISES.length * 100) : 0;
+    document.getElementById('progress-fill').style.width = `${pct}%`;
+    document.getElementById('progress-text').textContent = `${index} / ${EXERCISES.length}`;
+}
+
+function updateXpCounter(xp) {
+    const counter = document.getElementById('xp-counter');
+    const current = parseInt(counter.textContent) || 0;
+    counter.textContent = `+${current + xp}`;
+    counter.classList.remove('xp-pop');
+    void counter.offsetWidth;
+    counter.classList.add('xp-pop');
+}
+
+function spawnXpFloat(xp) {
+    const container = document.getElementById('xp-float-container');
+    const el = document.createElement('div');
+    el.className = 'xp-float';
+    el.textContent = `+${xp} XP`;
+    el.style.left = `${30 + Math.random() * 40}%`;
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+}
+
+function speakWord(word, lang) {
+    const utterance = new SpeechSynthesisUtterance(word);
+    utterance.lang = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : lang === 'hi' ? 'hi-IN' : 'en-US';
+    utterance.rate = 0.9;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utterance);
+}
+
+function showToast(msg) {
+    const container = document.getElementById('toast-container') || document.body;
+    const el = document.createElement('div');
+    el.className = 'toast-notification';
+    el.textContent = msg;
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 20px;z-index:1000;animation:fadeUp 0.3s ease;font-size:0.9rem;';
+    container.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 2500);
+}
+
+// ── Completion ─────────────────────────────────────────────────
+function showCompletion() {
+    document.getElementById('exercise-card').style.display = 'none';
+    document.getElementById('completion-screen').style.display = 'block';
+    document.getElementById('progress-fill').style.width = '100%';
+    document.getElementById('progress-text').textContent = `${EXERCISES.length} / ${EXERCISES.length}`;
+
+    const accuracy = totalAnswered > 0 ? Math.round(score / totalAnswered * 100) : 0;
+    document.getElementById('completion-score').textContent = `${accuracy}%`;
+    document.getElementById('completion-xp').textContent = `+${xpEarned}`;
+
+    // Show word chips
+    const words = [...new Set(wordProgress.map(w => w.word))];
+    document.getElementById('completion-words').innerHTML = words.map(w => {
+        const wp = wordProgress.find(p => p.word === w);
+        const emoji = wp && wp.correct ? '✅' : '🔄';
+        return `<span class="word-chip">${emoji} ${w}</span>`;
+    }).join('').replace(/,/g, '');
+
+    // Save to server
+    saveLessonProgress(accuracy);
+}
+
+async function saveLessonProgress(accuracy) {
+    try {
+        await fetch('/api/lesson/complete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                level_id: LEVEL_ID,
+                language: LANGUAGE,
+                score: score,
+                total: totalAnswered,
+                xp_earned: xpEarned,
+                word_progress: wordProgress
+            })
+        });
+    } catch (e) {
+        console.error('Save error:', e);
+    }
+}
+
+// ── Keyboard shortcut ─────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') toggleAiPanel();
+});
+
+// ── Mobile sidebar close ──────────────────────────────────────
+function closeSidebar() {
+    document.getElementById('app-sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').style.display = 'none';
+}
+</script>
+{% endblock %}

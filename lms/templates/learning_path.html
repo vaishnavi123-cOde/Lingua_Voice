@@ -327,33 +327,42 @@
         {% set is_current   = level_num == current_level %}
         {% set is_locked    = level_num > current_level %}
 
+        {% set is_checkpoint = level_num in [20, 40, 60, 80, 100] %}
         <div class="level-node {% if is_completed %}node-completed{% elif is_current %}node-current{% else %}node-locked{% endif %}">
           {% if is_completed %}
+            {% if is_checkpoint %}
+            <a href="/test" class="node-btn" style="background:linear-gradient(145deg,#8b5cf6,#7c3aed);box-shadow:0 6px 0 #6d28d9,0 8px 20px rgba(139,92,246,0.4);">
+              <span class="node-icon">🏁</span>
+              <span class="node-num">{{ level_num }}</span>
+            </a>
+            {% else %}
             <a href="/learning/level/{{ level_num }}/flashcards" class="node-btn">
               <span class="node-icon">⭐</span>
               <span class="node-num">{{ level_num }}</span>
             </a>
-            <div class="node-stars">
-              {% for i in range(3) %}<span class="star-filled">★</span>{% endfor %}
-            </div>
+            {% endif %}
+            <div class="node-stars">{% for i in range(3) %}<span class="star-filled">★</span>{% endfor %}</div>
           {% elif is_current %}
-            <a href="/learning/level/{{ level_num }}/flashcards" class="node-btn">
+            {% if is_checkpoint %}
+            <a href="/test" class="node-btn" style="background:linear-gradient(145deg,#8b5cf6,#7c3aed);box-shadow:0 6px 0 #6d28d9,0 8px 28px rgba(139,92,246,0.5);animation:node-bounce 1.5s ease-in-out infinite;">
+              <span class="node-icon">🏁</span>
+              <span class="node-num">{{ level_num }}</span>
+            </a>
+            {% else %}
+            <a href="/lesson/{{ level_num }}" class="node-btn">
               <span class="node-icon">🔥</span>
               <span class="node-num">{{ level_num }}</span>
             </a>
-            <div class="node-stars">
-              {% for i in range(3) %}<span class="star-empty">★</span>{% endfor %}
-            </div>
+            {% endif %}
+            <div class="node-stars">{% for i in range(3) %}<span class="star-empty">★</span>{% endfor %}</div>
           {% else %}
             <div class="node-btn">
-              <span class="node-icon">🔒</span>
+              <span class="node-icon">{{ '🏁' if is_checkpoint else '🔒' }}</span>
               <span class="node-num">{{ level_num }}</span>
             </div>
-            <div class="node-stars">
-              {% for i in range(3) %}<span class="star-empty">★</span>{% endfor %}
-            </div>
+            <div class="node-stars">{% for i in range(3) %}<span class="star-empty">★</span>{% endfor %}</div>
           {% endif %}
-          <div class="node-label">{{ 'Done' if is_completed else ('Play!' if is_current else 'Locked') }}</div>
+          <div class="node-label">{{ 'Checkpoint' if is_checkpoint and is_completed else ('Done' if is_completed else ('Play!' if is_current else ( 'Exam' if is_checkpoint else 'Locked'))) }}</div>
         </div>
       {% endfor %}
     </div>
@@ -375,23 +384,32 @@
         {% set is_completed = level_num in completed_levels %}
         {% set is_current   = level_num == current_level %}
         {% set is_locked    = level_num > current_level %}
+        {% set is_checkpoint = level_num in [20, 40, 60, 80, 100] %}
 
         <div class="level-node {% if is_completed %}node-completed{% elif is_current %}node-current{% else %}node-locked{% endif %}">
           {% if is_completed %}
-            <a href="/learning/level/{{ level_num }}/flashcards" class="node-btn">
-              <span class="node-icon">⭐</span><span class="node-num">{{ level_num }}</span>
+            {% if is_checkpoint %}
+            <a href="/test" class="node-btn" style="background:linear-gradient(145deg,#8b5cf6,#7c3aed);box-shadow:0 6px 0 #6d28d9,0 8px 20px rgba(139,92,246,0.4);">
+              <span class="node-icon">🏁</span><span class="node-num">{{ level_num }}</span>
             </a>
+            {% else %}
+            <a href="/learning/level/{{ level_num }}/flashcards" class="node-btn"><span class="node-icon">⭐</span><span class="node-num">{{ level_num }}</span></a>
+            {% endif %}
             <div class="node-stars">{% for i in range(3) %}<span class="star-filled">★</span>{% endfor %}</div>
           {% elif is_current %}
-            <a href="/learning/level/{{ level_num }}/flashcards" class="node-btn">
-              <span class="node-icon">🔥</span><span class="node-num">{{ level_num }}</span>
+            {% if is_checkpoint %}
+            <a href="/test" class="node-btn" style="background:linear-gradient(145deg,#8b5cf6,#7c3aed);box-shadow:0 6px 0 #6d28d9,0 8px 28px rgba(139,92,246,0.5);animation:node-bounce 1.5s ease-in-out infinite;">
+              <span class="node-icon">🏁</span><span class="node-num">{{ level_num }}</span>
             </a>
+            {% else %}
+            <a href="/lesson/{{ level_num }}" class="node-btn"><span class="node-icon">🔥</span><span class="node-num">{{ level_num }}</span></a>
+            {% endif %}
             <div class="node-stars">{% for i in range(3) %}<span class="star-empty">★</span>{% endfor %}</div>
           {% else %}
-            <div class="node-btn"><span class="node-icon">🔒</span><span class="node-num">{{ level_num }}</span></div>
+            <div class="node-btn"><span class="node-icon">{{ '🏁' if is_checkpoint else '🔒' }}</span><span class="node-num">{{ level_num }}</span></div>
             <div class="node-stars">{% for i in range(3) %}<span class="star-empty">★</span>{% endfor %}</div>
           {% endif %}
-          <div class="node-label">{{ 'Done' if is_completed else ('Play!' if is_current else 'Locked') }}</div>
+          <div class="node-label">{{ 'Checkpoint' if is_checkpoint and is_completed else ('Done' if is_completed else ('Play!' if is_current else ('Exam' if is_checkpoint else 'Locked'))) }}</div>
         </div>
       {% endfor %}
     </div>
@@ -412,19 +430,28 @@
       {% for level_num in range(row_start, [row_start+5, 61]|min) %}
         {% set is_completed = level_num in completed_levels %}
         {% set is_current   = level_num == current_level %}
+        {% set is_checkpoint = level_num in [20, 40, 60, 80, 100] %}
 
         <div class="level-node {% if is_completed %}node-completed{% elif is_current %}node-current{% else %}node-locked{% endif %}">
           {% if is_completed %}
+            {% if is_checkpoint %}
+            <a href="/test" class="node-btn" style="background:linear-gradient(145deg,#8b5cf6,#7c3aed);box-shadow:0 6px 0 #6d28d9,0 8px 20px rgba(139,92,246,0.4);"><span class="node-icon">🏁</span><span class="node-num">{{ level_num }}</span></a>
+            {% else %}
             <a href="/learning/level/{{ level_num }}/flashcards" class="node-btn"><span class="node-icon">⭐</span><span class="node-num">{{ level_num }}</span></a>
+            {% endif %}
             <div class="node-stars">{% for i in range(3) %}<span class="star-filled">★</span>{% endfor %}</div>
           {% elif is_current %}
-            <a href="/learning/level/{{ level_num }}/flashcards" class="node-btn"><span class="node-icon">🔥</span><span class="node-num">{{ level_num }}</span></a>
+            {% if is_checkpoint %}
+            <a href="/test" class="node-btn" style="background:linear-gradient(145deg,#8b5cf6,#7c3aed);box-shadow:0 6px 0 #6d28d9,0 8px 28px rgba(139,92,246,0.5);animation:node-bounce 1.5s ease-in-out infinite;"><span class="node-icon">🏁</span><span class="node-num">{{ level_num }}</span></a>
+            {% else %}
+            <a href="/lesson/{{ level_num }}" class="node-btn"><span class="node-icon">🔥</span><span class="node-num">{{ level_num }}</span></a>
+            {% endif %}
             <div class="node-stars">{% for i in range(3) %}<span class="star-empty">★</span>{% endfor %}</div>
           {% else %}
-            <div class="node-btn"><span class="node-icon">🔒</span><span class="node-num">{{ level_num }}</span></div>
+            <div class="node-btn"><span class="node-icon">{{ '🏁' if is_checkpoint else '🔒' }}</span><span class="node-num">{{ level_num }}</span></div>
             <div class="node-stars">{% for i in range(3) %}<span class="star-empty">★</span>{% endfor %}</div>
           {% endif %}
-          <div class="node-label">{{ 'Done' if is_completed else ('Play!' if is_current else 'Locked') }}</div>
+          <div class="node-label">{{ 'Checkpoint' if is_checkpoint and is_completed else ('Done' if is_completed else ('Play!' if is_current else ('Exam' if is_checkpoint else 'Locked'))) }}</div>
         </div>
       {% endfor %}
     </div>
@@ -445,19 +472,28 @@
       {% for level_num in range(row_start, [row_start+5, 81]|min) %}
         {% set is_completed = level_num in completed_levels %}
         {% set is_current   = level_num == current_level %}
+        {% set is_checkpoint = level_num in [20, 40, 60, 80, 100] %}
 
         <div class="level-node {% if is_completed %}node-completed{% elif is_current %}node-current{% else %}node-locked{% endif %}">
           {% if is_completed %}
+            {% if is_checkpoint %}
+            <a href="/test" class="node-btn" style="background:linear-gradient(145deg,#8b5cf6,#7c3aed);box-shadow:0 6px 0 #6d28d9,0 8px 20px rgba(139,92,246,0.4);"><span class="node-icon">🏁</span><span class="node-num">{{ level_num }}</span></a>
+            {% else %}
             <a href="/learning/level/{{ level_num }}/flashcards" class="node-btn"><span class="node-icon">⭐</span><span class="node-num">{{ level_num }}</span></a>
+            {% endif %}
             <div class="node-stars">{% for i in range(3) %}<span class="star-filled">★</span>{% endfor %}</div>
           {% elif is_current %}
-            <a href="/learning/level/{{ level_num }}/flashcards" class="node-btn"><span class="node-icon">🔥</span><span class="node-num">{{ level_num }}</span></a>
+            {% if is_checkpoint %}
+            <a href="/test" class="node-btn" style="background:linear-gradient(145deg,#8b5cf6,#7c3aed);box-shadow:0 6px 0 #6d28d9,0 8px 28px rgba(139,92,246,0.5);animation:node-bounce 1.5s ease-in-out infinite;"><span class="node-icon">🏁</span><span class="node-num">{{ level_num }}</span></a>
+            {% else %}
+            <a href="/lesson/{{ level_num }}" class="node-btn"><span class="node-icon">🔥</span><span class="node-num">{{ level_num }}</span></a>
+            {% endif %}
             <div class="node-stars">{% for i in range(3) %}<span class="star-empty">★</span>{% endfor %}</div>
           {% else %}
-            <div class="node-btn"><span class="node-icon">🔒</span><span class="node-num">{{ level_num }}</span></div>
+            <div class="node-btn"><span class="node-icon">{{ '🏁' if is_checkpoint else '🔒' }}</span><span class="node-num">{{ level_num }}</span></div>
             <div class="node-stars">{% for i in range(3) %}<span class="star-empty">★</span>{% endfor %}</div>
           {% endif %}
-          <div class="node-label">{{ 'Done' if is_completed else ('Play!' if is_current else 'Locked') }}</div>
+          <div class="node-label">{{ 'Checkpoint' if is_checkpoint and is_completed else ('Done' if is_completed else ('Play!' if is_current else ('Exam' if is_checkpoint else 'Locked'))) }}</div>
         </div>
       {% endfor %}
     </div>
@@ -478,19 +514,28 @@
       {% for level_num in range(row_start, [row_start+5, 101]|min) %}
         {% set is_completed = level_num in completed_levels %}
         {% set is_current   = level_num == current_level %}
+        {% set is_checkpoint = level_num in [20, 40, 60, 80, 100] %}
 
         <div class="level-node {% if is_completed %}node-completed{% elif is_current %}node-current{% else %}node-locked{% endif %}">
           {% if is_completed %}
+            {% if is_checkpoint %}
+            <a href="/test" class="node-btn" style="background:linear-gradient(145deg,#8b5cf6,#7c3aed);box-shadow:0 6px 0 #6d28d9,0 8px 20px rgba(139,92,246,0.4);"><span class="node-icon">{{ '👑' if level_num == 100 else '🏁' }}</span><span class="node-num">{{ level_num }}</span></a>
+            {% else %}
             <a href="/learning/level/{{ level_num }}/flashcards" class="node-btn"><span class="node-icon">{{ '👑' if level_num == 100 else '⭐' }}</span><span class="node-num">{{ level_num }}</span></a>
+            {% endif %}
             <div class="node-stars">{% for i in range(3) %}<span class="star-filled">★</span>{% endfor %}</div>
           {% elif is_current %}
-            <a href="/learning/level/{{ level_num }}/flashcards" class="node-btn"><span class="node-icon">🔥</span><span class="node-num">{{ level_num }}</span></a>
+            {% if is_checkpoint %}
+            <a href="/test" class="node-btn" style="background:linear-gradient(145deg,#8b5cf6,#7c3aed);box-shadow:0 6px 0 #6d28d9,0 8px 28px rgba(139,92,246,0.5);animation:node-bounce 1.5s ease-in-out infinite;"><span class="node-icon">🏁</span><span class="node-num">{{ level_num }}</span></a>
+            {% else %}
+            <a href="/lesson/{{ level_num }}" class="node-btn"><span class="node-icon">🔥</span><span class="node-num">{{ level_num }}</span></a>
+            {% endif %}
             <div class="node-stars">{% for i in range(3) %}<span class="star-empty">★</span>{% endfor %}</div>
           {% else %}
-            <div class="node-btn"><span class="node-icon">{{ '🏆' if level_num == 100 else '🔒' }}</span><span class="node-num">{{ level_num }}</span></div>
+            <div class="node-btn"><span class="node-icon">{{ '🏆' if level_num == 100 else ('🏁' if is_checkpoint else '🔒') }}</span><span class="node-num">{{ level_num }}</span></div>
             <div class="node-stars">{% for i in range(3) %}<span class="star-empty">★</span>{% endfor %}</div>
           {% endif %}
-          <div class="node-label">{{ 'Done!' if is_completed else ('Play!' if is_current else 'Locked') }}</div>
+          <div class="node-label">{{ 'Checkpoint' if is_checkpoint and is_completed else ('Done!' if is_completed else ('Play!' if is_current else ('Exam' if is_checkpoint else 'Locked'))) }}</div>
         </div>
       {% endfor %}
     </div>

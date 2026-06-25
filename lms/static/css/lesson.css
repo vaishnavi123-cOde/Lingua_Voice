@@ -1,0 +1,472 @@
+/* ══════════════════════════════════════════════════════════════
+   LESSON PAGE — Duolingo-style lesson experience
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Layout ─────────────────────────────────────── */
+.lesson-container {
+    max-width: 100%;
+    min-height: calc(100vh - 80px);
+    display: flex;
+    flex-direction: column;
+}
+
+.lesson-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 0 20px;
+}
+
+.lesson-back {
+    font-size: 1.3rem;
+    color: var(--text-2);
+    text-decoration: none;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+.lesson-back:hover {
+    background: var(--surface);
+    color: var(--text-1);
+}
+
+.lesson-progress-bar {
+    flex: 1;
+    height: 12px;
+    background: var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.lesson-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #ff6b35);
+    border-radius: 999px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lesson-progress-text {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-2);
+    min-width: 80px;
+    text-align: center;
+}
+
+.lesson-xp-counter {
+    font-size: 0.95rem;
+    font-weight: 900;
+    color: var(--accent);
+    min-width: 60px;
+    text-align: right;
+    transition: all 0.3s;
+}
+.xp-pop { transform: scale(1.3); color: #ff6b35; }
+
+/* ── Body Layout ─────────────────────────────────── */
+.lesson-body {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+}
+
+.lesson-exercise-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── SRS Banner ──────────────────────────────────── */
+.srs-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 14px;
+    margin-bottom: 16px;
+    animation: slideDown 0.4s ease;
+}
+.srs-banner-icon { font-size: 1.4rem; }
+.srs-banner-text { font-size: 0.9rem; color: var(--text-2); font-weight: 600; }
+
+/* ── Exercise Card ───────────────────────────────── */
+.exercise-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    animation: fadeUp 0.4s ease;
+}
+
+.word-dots {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    justify-content: center;
+}
+
+.word-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: all 0.3s;
+}
+.word-dot.current { background: var(--accent); box-shadow: 0 0 8px rgba(255,165,0,0.5); }
+.word-dot.done { background: #10b981; }
+
+.exercise-content { flex: 1; }
+.exercise-loading { text-align: center; padding: 60px 20px; color: var(--text-3); font-size: 1.1rem; }
+
+.exercise-xp-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    background: rgba(255,165,0,0.12);
+    border: 1px solid rgba(255,165,0,0.2);
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 16px;
+}
+
+.ex-hint {
+    text-align: center;
+    color: var(--text-3);
+    font-size: 0.85rem;
+    margin-top: 20px;
+}
+
+/* ── Exercise: Learn ──────────────────────────────── */
+.ex-learn { text-align: center; padding: 40px 20px; }
+.ex-learn-word { font-size: 2.8rem; font-weight: 900; color: var(--text-1); margin-bottom: 8px; }
+.ex-learn-meaning { font-size: 1.2rem; color: var(--text-2); margin-bottom: 20px; }
+.ex-learn-example { font-size: 0.95rem; color: var(--text-3); font-style: italic; max-width: 400px; margin: 0 auto; line-height: 1.5; }
+
+/* ── Exercise: Listen ─────────────────────────────── */
+.ex-listen { text-align: center; padding: 30px 20px; }
+.ex-listen-prompt { font-size: 1rem; color: var(--text-2); margin-bottom: 20px; }
+.listen-btn { padding: 14px 32px; font-size: 1.2rem; border-radius: 50px; animation: pulse-glow 2s infinite; }
+
+/* ── Exercise: Speak ──────────────────────────────── */
+.ex-speak { text-align: center; padding: 30px 20px; }
+.ex-speak-prompt { font-size: 1rem; color: var(--text-2); margin-bottom: 12px; }
+.ex-speak-word { font-size: 2.2rem; font-weight: 900; color: var(--text-1); margin-bottom: 4px; }
+.ex-speak-meaning { font-size: 1rem; color: var(--text-3); margin-bottom: 24px; }
+.speak-btn { padding: 16px 40px; font-size: 1.2rem; border-radius: 50px; }
+.speech-result { font-size: 0.95rem; margin-top: 16px; padding: 12px; border-radius: 10px; min-height: 24px; }
+
+/* ── Exercise: Translate / Recall / Sentence ──────── */
+.ex-translate, .ex-recall { text-align: center; padding: 30px 20px; }
+.ex-translate-prompt, .ex-recall-prompt { font-size: 1rem; color: var(--text-2); margin-bottom: 12px; }
+.ex-translate-word, .ex-recall-meaning { font-size: 1.6rem; font-weight: 700; color: var(--text-1); }
+
+.ex-sentence { text-align: center; padding: 30px 20px; }
+.ex-sentence-prompt { font-size: 1rem; color: var(--text-2); margin-bottom: 12px; }
+.ex-sentence-text { font-size: 1.4rem; font-weight: 600; color: var(--text-1); line-height: 1.5; }
+
+/* ── Exercise: Review (SRS) ───────────────────────── */
+.ex-review { text-align: center; padding: 30px 20px; }
+.ex-review-icon { font-size: 2.5rem; margin-bottom: 12px; }
+.ex-review-prompt { font-size: 1rem; color: var(--text-2); margin-bottom: 16px; }
+.ex-review-word { font-size: 2rem; font-weight: 900; color: var(--text-1); margin-bottom: 8px; }
+.ex-review-meaning { font-size: 1rem; color: var(--text-3); }
+.ex-review-actions { display: flex; gap: 16px; justify-content: center; margin-top: 24px; }
+
+/* ── Options Grid ─────────────────────────────────── */
+.ex-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-width: 500px;
+    margin: 20px auto;
+}
+
+.option-btn {
+    padding: 16px 20px;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    color: var(--text-1);
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.option-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+.option-btn.selected { border-color: var(--accent); background: rgba(255,165,0,0.08); }
+.option-btn.correct { border-color: #10b981; background: rgba(16,185,129,0.1); color: #34d399; }
+.option-btn.wrong { border-color: #ef4444; background: rgba(239,68,68,0.1); color: #f87171; }
+.option-btn:disabled { cursor: default; transform: none; }
+
+/* ── Text Input ───────────────────────────────────── */
+.ex-input {
+    width: 100%;
+    max-width: 450px;
+    padding: 14px 18px;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    color: var(--text-1);
+    font-size: 1.1rem;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+    margin: 20px auto;
+    display: block;
+}
+.ex-input:focus { border-color: var(--accent); }
+
+/* ── Answer Area ──────────────────────────────────── */
+.answer-area { min-height: 80px; }
+
+.feedback-overlay {
+    text-align: center;
+    padding: 16px;
+    border-radius: 14px;
+    margin-bottom: 16px;
+    animation: fadeUp 0.3s ease;
+}
+.feedback-correct { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); }
+.feedback-wrong { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); }
+.feedback-icon { font-size: 2rem; margin-bottom: 6px; }
+.feedback-text { font-size: 0.95rem; color: var(--text-2); font-weight: 600; }
+
+/* ── Exercise Actions ─────────────────────────────── */
+.exercise-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+}
+
+/* ── Completion Screen ────────────────────────────── */
+.completion-screen {
+    text-align: center;
+    padding: 60px 20px;
+    animation: fadeUp 0.6s ease;
+}
+.completion-orb {
+    font-size: 5rem;
+    margin-bottom: 16px;
+    animation: orbFloat 2s ease-in-out infinite;
+}
+.completion-title { font-size: 2rem; font-weight: 900; color: var(--text-1); margin-bottom: 24px; }
+.completion-stats { display: flex; gap: 32px; justify-content: center; margin-bottom: 28px; }
+.completion-stat { text-align: center; }
+.completion-stat-value { font-size: 2.5rem; font-weight: 900; color: var(--accent); display: block; }
+.completion-stat-label { font-size: 0.85rem; color: var(--text-3); }
+.completion-words { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 32px; }
+.word-chip { padding: 8px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 50px; font-size: 0.9rem; color: var(--text-1); font-weight: 600; }
+.completion-actions { display: flex; gap: 16px; justify-content: center; }
+
+/* ── AI Companion Panel ───────────────────────────── */
+.ai-companion-panel {
+    width: 320px;
+    min-width: 320px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s;
+    max-height: calc(100vh - 140px);
+    position: sticky;
+    top: 80px;
+}
+.ai-companion-panel.collapsed { width: 48px; min-width: 48px; }
+.ai-companion-panel.collapsed .ai-panel-body { display: none; }
+
+.ai-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    user-select: none;
+}
+
+.ai-orb {
+    font-size: 1.5rem;
+    transition: transform 0.3s;
+    line-height: 1;
+}
+.ai-orb-happy { animation: orbHappy 0.6s ease; }
+.ai-orb-thinking { animation: orbThinking 0.8s ease infinite; }
+
+.ai-panel-title { font-size: 0.9rem; font-weight: 700; color: var(--text-1); flex: 1; }
+.ai-toggle-icon { font-size: 0.8rem; color: var(--text-3); }
+
+.ai-panel-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.ai-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 350px;
+}
+
+.ai-message { display: flex; align-items: flex-start; gap: 8px; }
+.ai-message-out { justify-content: flex-end; }
+
+.ai-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: rgba(255,165,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.ai-bubble {
+    max-width: 85%;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px 14px 14px 4px;
+    font-size: 0.85rem;
+    color: var(--text-2);
+    line-height: 1.4;
+}
+.ai-bubble-out {
+    background: rgba(255,165,0,0.1);
+    border-color: rgba(255,165,0,0.15);
+    border-radius: 14px 14px 4px 14px;
+    color: var(--text-1);
+}
+
+.ai-quick-actions {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+}
+
+.ai-quick-btn {
+    flex: 1;
+    min-width: 70px;
+    padding: 6px 10px;
+    border-radius: 50px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-2);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+.ai-quick-btn:hover { border-color: var(--accent); color: var(--text-1); background: rgba(255,165,0,0.05); }
+
+.ai-input-area {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+}
+
+.ai-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    background: var(--surface2);
+    color: var(--text-1);
+    font-size: 0.85rem;
+    outline: none;
+}
+.ai-input:focus { border-color: var(--accent); }
+
+.ai-send-btn {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: #000;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.ai-send-btn:hover { transform: scale(1.1); }
+
+/* ── XP Float Animation ──────────────────────────── */
+.xp-float {
+    position: absolute;
+    bottom: 40%;
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--accent);
+    pointer-events: none;
+    animation: floatUp 1.2s ease-out forwards;
+    text-shadow: 0 0 16px rgba(255,165,0,0.3);
+}
+
+/* ── Animations ───────────────────────────────────── */
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes floatUp {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-120px) scale(1.4); }
+}
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,165,0,0.3); }
+    50% { box-shadow: 0 0 24px 6px rgba(255,165,0,0.1); }
+}
+@keyframes orbFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+}
+@keyframes orbHappy {
+    0% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.2) rotate(-10deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+@keyframes orbThinking {
+    0%, 100% { transform: translateY(0); }
+    25% { transform: translateY(-4px); }
+    75% { transform: translateY(2px); }
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 860px) {
+    .lesson-body { flex-direction: column; }
+    .ai-companion-panel {
+        width: 100%;
+        min-width: 100%;
+        max-height: 300px;
+        position: static;
+    }
+    .ai-companion-panel.collapsed { width: 100%; min-width: 100%; }
+    .ai-companion-panel.collapsed .ai-panel-body { display: none; }
+    .exercise-card { padding: 20px; }
+    .ex-options { grid-template-columns: 1fr; }
+}

@@ -629,53 +629,41 @@
         </div>
 
         <nav class="sidebar-nav">
-            <div class="nav-section">Main</div>
+            <div class="nav-section">Learn</div>
 
             <a href="/dashboard" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
-                <span class="nav-icon">📊</span> Dashboard
-            </a>
-            <a href="/transcription" class="nav-link {% if request.endpoint == 'transcription_page' %}active{% endif %}">
-                <span class="nav-icon">🎙️</span> Transcription
-            </a>
-            <a href="/ai_tutor" class="nav-link {% if request.endpoint == 'ai_tutor_page' %}active{% endif %}">
-                <span class="nav-icon">🤖</span> AI Tutor
-            </a>
-
-            <div class="nav-section">Learning</div>
-
-            <a href="/vocabulary" class="nav-link {% if request.endpoint == 'vocabulary_page' %}active{% endif %}">
-                <span class="nav-icon">📚</span> Vocabulary
-            </a>
-            <a href="/reviews" class="nav-link {% if request.endpoint == 'review_center' %}active{% endif %}">
-                <span class="nav-icon">🔄</span> Review Center
+                <span class="nav-icon">🏠</span> Home
             </a>
             <a href="/learning_path" class="nav-link {% if request.endpoint == 'learning_path_page' %}active{% endif %}">
                 <span class="nav-icon">🎯</span> Learning Path
             </a>
-            <a href="/notes" class="nav-link {% if request.endpoint == 'notes_page' %}active{% endif %}">
-                <span class="nav-icon">📝</span> Notes
-            </a>
-            <a href="/test" class="nav-link {% if request.endpoint == 'test_page' %}active{% endif %}">
-                <span class="nav-icon">🧪</span> Practice Test
-            </a>
 
-            <div class="nav-section">Insights</div>
+            <div class="nav-section">Reference</div>
 
+            <a href="/vocabulary" class="nav-link {% if request.endpoint == 'vocabulary_page' %}active{% endif %}">
+                <span class="nav-icon">📖</span> Dictionary
+            </a>
             <a href="/analytics" class="nav-link {% if request.endpoint == 'analytics_page' %}active{% endif %}">
-                <span class="nav-icon">📈</span> Analytics
+                <span class="nav-icon">📊</span> Progress
             </a>
+
+            <div class="nav-section">Community</div>
+
             <a href="/community" class="nav-link {% if request.endpoint == 'community_page' %}active{% endif %}">
                 <span class="nav-icon">👥</span> Community
             </a>
             <a href="/certificate" class="nav-link {% if request.endpoint == 'certificate_page' %}active{% endif %}">
                 <span class="nav-icon">🏆</span> Certificate
             </a>
-            <a href="/validation" class="nav-link {% if request.endpoint == 'validation_page' %}active{% endif %}">
-                <span class="nav-icon">✅</span> Validation
-            </a>
 
             <div class="nav-section">Tools</div>
 
+            <a href="/test" class="nav-link {% if request.endpoint == 'test_page' %}active{% endif %}">
+                <span class="nav-icon">🧪</span> Practice Test
+            </a>
+            <a href="/notes" class="nav-link {% if request.endpoint == 'notes_page' %}active{% endif %}">
+                <span class="nav-icon">📝</span> Notes
+            </a>
             <a href="/sql-training" class="nav-link {% if request.endpoint == 'sql_training' %}active{% endif %}">
                 <span class="nav-icon">🗃️</span> SQL Training
             </a>

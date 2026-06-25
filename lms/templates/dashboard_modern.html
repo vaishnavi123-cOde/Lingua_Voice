@@ -1,8 +1,8 @@
 {% extends "base_sidebar.html" %}
 
-{% block title %}Dashboard — LinguaVoice{% endblock %}
-{% block page_title %}Welcome back, {{ user_name }}! 👋{% endblock %}
-{% block page_subtitle %}Ready to continue your language journey?{% endblock %}
+{% block title %}Learn — LinguaVoice{% endblock %}
+{% block page_title %}Learn, {{ user_name }}! 👋{% endblock %}
+{% block page_subtitle %}Continue your language journey{% endblock %}
 
 {% block content %}
 
@@ -36,7 +36,7 @@
     <div class="stat-icon">🔄</div>
     <div class="stat-label">Words Due Today</div>
     <div class="stat-value" id="due-words-count">—</div>
-    <div class="stat-change"><a href="/reviews" style="color:var(--accent);text-decoration:none;">Review now →</a></div>
+    <div class="stat-change"><a href="/learning_path" style="color:var(--accent);text-decoration:none;">Start lesson →</a></div>
   </div>
 </div>
 
@@ -48,43 +48,43 @@
 <!-- ── Two-column layout ───────────────────────────────── -->
 <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:24px;margin-bottom:32px;" id="dashboard-grid">
 
-  <!-- Quick Actions -->
+  <!-- Continue Lesson -->
   <div class="fade-up-2">
     <h2 class="section-title">Continue Learning</h2>
     <div style="display:flex;flex-direction:column;gap:12px;">
 
-      <a href="/transcription" class="action-card">
-        <div class="action-icon">🎙️</div>
+      <a href="/lesson/continue" class="action-card" style="background:linear-gradient(135deg,rgba(255,165,0,0.08),rgba(255,107,0,0.04));border-color:rgba(255,165,0,0.2);">
+        <div class="action-icon" style="background:rgba(255,165,0,0.15);">▶️</div>
         <div>
-          <div class="action-title">Voice Transcription</div>
-          <div class="action-description">Practice speaking with real-time AI transcription</div>
+          <div class="action-title" style="color:var(--accent);">Continue Lesson</div>
+          <div class="action-description">Resume where you left off on the Learning Path</div>
         </div>
-        <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:rgba(255,255,255,0.25);font-size:0.8rem;flex-shrink:0;"></i>
-      </a>
-
-      <a href="/ai_tutor" class="action-card">
-        <div class="action-icon">🤖</div>
-        <div>
-          <div class="action-title">AI Conversation</div>
-          <div class="action-description">Chat with your intelligent language coach</div>
-        </div>
-        <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:rgba(255,255,255,0.25);font-size:0.8rem;flex-shrink:0;"></i>
-      </a>
-
-      <a href="/vocabulary" class="action-card">
-        <div class="action-icon">📚</div>
-        <div>
-          <div class="action-title">Review Vocabulary</div>
-          <div class="action-description">Study your word bank with flashcards and quiz</div>
-        </div>
-        <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:rgba(255,255,255,0.25);font-size:0.8rem;flex-shrink:0;"></i>
+        <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:rgba(255,165,0,0.4);font-size:0.8rem;flex-shrink:0;"></i>
       </a>
 
       <a href="/learning_path" class="action-card">
         <div class="action-icon">🧭</div>
         <div>
           <div class="action-title">Learning Path</div>
-          <div class="action-description">Continue your structured 100-level journey</div>
+          <div class="action-description">100 levels of progressive language learning</div>
+        </div>
+        <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:rgba(255,255,255,0.25);font-size:0.8rem;flex-shrink:0;"></i>
+      </a>
+
+      <a href="/vocabulary" class="action-card">
+        <div class="action-icon">📖</div>
+        <div>
+          <div class="action-title">Dictionary</div>
+          <div class="action-description">Browse your vocabulary and track mastery</div>
+        </div>
+        <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:rgba(255,255,255,0.25);font-size:0.8rem;flex-shrink:0;"></i>
+      </a>
+
+      <a href="/analytics" class="action-card">
+        <div class="action-icon">📊</div>
+        <div>
+          <div class="action-title">Progress</div>
+          <div class="action-description">View your stats, streaks, and achievements</div>
         </div>
         <i class="fa-solid fa-chevron-right" style="margin-left:auto;color:rgba(255,255,255,0.25);font-size:0.8rem;flex-shrink:0;"></i>
       </a>
@@ -211,26 +211,11 @@ loadDailyPlan();
 
 <!-- ── Quick Access Tools ──────────────────────────────── -->
 <div class="fade-up-4" id="quick-tools-section">
-  <h2 class="section-title">Quick Tools</h2>
+  <h2 class="section-title">Explore</h2>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
 
-    <a href="/test" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;text-decoration:none;color:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,165,0,0.06)';this.style.borderColor='rgba(255,165,0,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.08)'">
-      <span style="font-size:1.6rem;">🧪</span>
-      <span style="font-size:0.85rem;font-weight:600;color:rgba(255,255,255,0.75);">Practice Test</span>
-    </a>
-
-    <a href="/notes" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;text-decoration:none;color:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,165,0,0.06)';this.style.borderColor='rgba(255,165,0,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.08)'">
-      <span style="font-size:1.6rem;">📝</span>
-      <span style="font-size:0.85rem;font-weight:600;color:rgba(255,255,255,0.75);">My Notes</span>
-    </a>
-
-    <a href="/analytics" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;text-decoration:none;color:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,165,0,0.06)';this.style.borderColor='rgba(255,165,0,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.08)'">
-      <span style="font-size:1.6rem;">📊</span>
-      <span style="font-size:0.85rem;font-weight:600;color:rgba(255,255,255,0.75);">Analytics</span>
-    </a>
-
     <a href="/community" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;text-decoration:none;color:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,165,0,0.06)';this.style.borderColor='rgba(255,165,0,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.03)';this.style.borderColor='rgba(255,255,255,0.08)'">
-      <span style="font-size:1.6rem;">🌍</span>
+      <span style="font-size:1.6rem;">👥</span>
       <span style="font-size:0.85rem;font-weight:600;color:rgba(255,255,255,0.75);">Community</span>
     </a>
 
