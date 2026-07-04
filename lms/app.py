@@ -349,8 +349,15 @@ def lesson_complete():
     xp_earned = data.get("xp_earned", 0)
     word_progress = data.get("word_progress")
 
+    stage_stats = data.get("stage_stats", {})
+    duration_seconds = data.get("duration_seconds", 0)
+
     from lesson_service import complete_lesson
-    result = complete_lesson(user_id, level_id, language, score, total, xp_earned, word_progress)
+    result = complete_lesson(user_id, level_id, language, score, total, xp_earned, word_progress, duration_seconds)
+
+    new_ach = result.get("new_achievements", [])
+    if new_ach:
+        result["new_achievements"] = new_ach
 
     return jsonify(result)
 
@@ -977,11 +984,27 @@ def api_learner_forgetting_curve():
 def get_stats():
     user_id = get_current_user_id()
     if not user_id: return jsonify({"error": "Not logged in"}), 401
-    stats = chatbot.get_user_stats(user_id)
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    stats = {}
     try:
+        cursor.execute("SELECT SUM(total_xp), SUM(streak_days) FROM user_progress WHERE user_id=?", (user_id,))
+        row = cursor.fetchone()
+        stats['total_xp'] = row[0] or 0
+        stats['streak_days'] = row[1] or 0
+
+        cursor.execute("SELECT COUNT(*) FROM vocabulary WHERE user_id=?", (user_id,))
+        stats['words_learned'] = cursor.fetchone()[0] or 0
+
+        cursor.execute("SELECT COALESCE(SUM(duration_seconds), 0) FROM learning_sessions WHERE user_id=? AND session_date >= date('now', '-7 days')", (user_id,))
+        total_secs = cursor.fetchone()[0]
+        stats['practice_hours'] = round(total_secs / 3600, 1) if total_secs else 0
+
         stats['due_words_today'] = srs_manager.get_due_count(user_id)
-    except Exception:
-        stats['due_words_today'] = 0
+    except Exception as e:
+        stats = {'total_xp': 0, 'streak_days': 0, 'words_learned': 0, 'practice_hours': 0, 'due_words_today': 0}
+    finally:
+        conn.close()
     return jsonify({"stats": stats})
 
 @app.route("/api/validate_word_manual")

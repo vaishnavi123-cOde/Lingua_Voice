@@ -5,7 +5,7 @@ import { Send, Loader2, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useChatStore } from "@/lib/store";
-import { askQuestion, type Source } from "@/lib/api";
+import { askQuestion } from "@/lib/api";
 
 declare global {
   interface Window {
@@ -20,8 +20,14 @@ export function ChatInput() {
   const [isRecording, setIsRecording] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
-  const { addMessage, updateLastMessage, isStreaming, setStreaming } =
-    useChatStore();
+  const {
+    addMessage,
+    updateLastMessage,
+    sessionId,
+    teachingState,
+    setSessionId,
+    setTeachingState,
+  } = useChatStore();
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -50,9 +56,26 @@ export function ChatInput() {
     });
 
     try {
-      const response = await askQuestion(question);
+      const response = await askQuestion(question, sessionId, teachingState);
 
-      updateLastMessage(response.answer);
+      if (response.session_id && !sessionId) {
+        setSessionId(response.session_id);
+      }
+      if (response.teaching_state) {
+        setTeachingState(response.teaching_state);
+      }
+
+      const extra: Record<string, unknown> = {};
+      if (response.sources) extra.sources = response.sources;
+      if (response.confidence !== undefined) extra.confidence = response.confidence;
+      if (response.teacher_action) extra.teacher_action = response.teacher_action;
+      if (response.teaching_state) extra.teaching_state = response.teaching_state;
+      if (response.student_prompt) extra.student_prompt = response.student_prompt;
+      if (response.student_prompt_type) extra.student_prompt_type = response.student_prompt_type;
+      if (response.micro_exercise) extra.micro_exercise = response.micro_exercise;
+      if (response.session_id) extra.session_id = response.session_id;
+
+      updateLastMessage(response.answer, extra);
 
       const message = useChatStore.getState().messages;
       const updated = [...message];
@@ -60,8 +83,7 @@ export function ChatInput() {
       if (lastIdx >= 0) {
         updated[lastIdx] = {
           ...updated[lastIdx],
-          sources: response.sources,
-          confidence: response.confidence,
+          ...extra,
         };
         useChatStore.setState({ messages: updated });
       }
@@ -95,7 +117,6 @@ export function ChatInput() {
 
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
-      console.log("Speech recognition result:", transcript);
       setInput(transcript);
       setIsRecording(false);
     };
@@ -112,7 +133,6 @@ export function ChatInput() {
     recognitionRef.current = recognition;
     recognition.start();
     setIsRecording(true);
-    console.log("Recording started...");
   }, [isRecording]);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -130,7 +150,7 @@ export function ChatInput() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask a SQL question..."
+          placeholder="Ask your SQL teacher..."
           disabled={isLoading}
           className="flex-1"
         />

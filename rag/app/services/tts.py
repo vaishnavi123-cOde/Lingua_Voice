@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import re
 import time
 import uuid
 from pathlib import Path
@@ -11,6 +12,21 @@ from app.config.settings import settings
 from app.services.monitoring import metrics_collector
 
 logger = logging.getLogger(__name__)
+
+
+def strip_markdown(text: str) -> str:
+    text = re.sub(r"```[\s\S]*?```", "", text)
+    text = re.sub(r"#{1,6}\s*", "", text)
+    text = re.sub(r"\*\*([^*]+)\*\*", r"\1", text)
+    text = re.sub(r"\*([^*]+)\*", r"\1", text)
+    text = re.sub(r"`([^`]+)`", r"\1", text)
+    text = re.sub(r"^[-*+]\s+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"^\d+\.\s+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"\|", ", ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
 
 
 class TTSService:
@@ -34,9 +50,11 @@ class TTSService:
         percent = int((speed - 1.0) * 100)
         rate = f"+{percent}%" if percent >= 0 else f"{percent}%"
 
+        clean_text = strip_markdown(text)
+
         try:
             communicate = edge_tts.Communicate(
-                text=text,
+                text=clean_text,
                 voice=voice,
                 rate=rate,
             )

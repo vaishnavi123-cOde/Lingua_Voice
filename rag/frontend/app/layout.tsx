@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SQL Lecture Assistant",
-  description: "RAG-powered SQL training assistant with voice output",
+  title: "AI SQL Teacher",
+  description: "Your personal AI SQL instructor — Socratic teaching with voice",
 };
 
 export default function RootLayout({

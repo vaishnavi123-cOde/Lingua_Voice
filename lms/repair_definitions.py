@@ -1,211 +1,135 @@
 """
-Repair script: Find and fix placeholder/bad definitions in vocabulary tables.
-Priority: OpenAI > Free Dictionary API > Offline Dictionary > Generated fallback
+Database Repair Script — Find and replace placeholder meanings in vocabulary table.
 """
 import sys
 import os
-import re
-import time
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-os.environ["FLASK_SECRET_KEY"] = "repair-script"
+sys.path.insert(0, os.path.dirname(__file__))
 
 from database_manager import db
-from word_validator import is_placeholder
-from api_service import api_service
+from dictionary_service import dictionary_service, _is_placeholder
+
 
 PLACEHOLDER_PATTERNS = [
-    re.compile(r'^Definition pending\.\.\.$', re.I),
-    re.compile(r'^Definición pendiente\.\.\.$', re.I),
-    re.compile(r'^परिभाषा लंबित\.\.\.$', re.I),
-    re.compile(r'^Learning in progress\.\.\.$', re.I),
-    re.compile(r'^Meaning of ', re.I),
-    re.compile(r'^A word related to ', re.I),
-    re.compile(r'^Unknown$', re.I),
-    re.compile(r'^Loading\.\.\.$', re.I),
+    "meaning of", "definition pending", "loading...", "unknown",
 ]
 
-def is_bad_meaning(text):
-    if not text:
+
+def is_placeholder_meaning(meaning, word=None):
+    if not meaning or not isinstance(meaning, str):
         return True
-    text = text.strip()
-    if len(text) < 3:
+    text = meaning.strip().lower()
+    if text in ("", "none", "null", "unknown", "loading...", "definition pending", "placeholder"):
         return True
-    for p in PLACEHOLDER_PATTERNS:
-        if p.search(text):
+    for pat in PLACEHOLDER_PATTERNS:
+        if pat in text:
+            return True
+    if word and word.lower() in text:
+        if len(text) < 20:
             return True
     return False
 
-def generate_fallback(word, language):
-    """Smart fallback: use known translations for common words."""
-    known = {
-        ('es', 'perro'): 'dog',
-        ('es', 'gato'): 'cat',
-        ('es', 'casa'): 'house',
-        ('es', 'agua'): 'water',
-        ('es', 'sol'): 'sun',
-        ('es', 'luna'): 'moon',
-        ('es', 'playa'): 'beach',
-        ('es', 'coche'): 'car',
-        ('es', 'libro'): 'book',
-        ('es', 'mesa'): 'table',
-        ('es', 'silla'): 'chair',
-        ('es', 'puerta'): 'door',
-        ('es', 'ventana'): 'window',
-        ('es', 'hombre'): 'man',
-        ('es', 'mujer'): 'woman',
-        ('es', 'niño'): 'boy',
-        ('es', 'niña'): 'girl',
-        ('es', 'comida'): 'food',
-        ('es', 'tiempo'): 'time',
-        ('es', 'trabajo'): 'work',
-        ('es', 'escuela'): 'school',
-        ('es', 'amigo'): 'friend',
-        ('es', 'familia'): 'family',
-        ('es', 'ciudad'): 'city',
-        ('es', 'país'): 'country',
-        ('es', 'mundo'): 'world',
-        ('es', 'vida'): 'life',
-        ('es', 'día'): 'day',
-        ('es', 'noche'): 'night',
-        ('es', 'grande'): 'big',
-        ('es', 'pequeño'): 'small',
-        ('es', 'bonito'): 'beautiful',
-        ('es', 'feliz'): 'happy',
-        ('es', 'triste'): 'sad',
-        ('hi', 'पानी'): 'water',
-        ('hi', 'आदमी'): 'man',
-        ('hi', 'औरत'): 'woman',
-        ('hi', 'बच्चा'): 'child',
-        ('hi', 'खाना'): 'food',
-        ('hi', 'घर'): 'house',
-        ('hi', 'किताब'): 'book',
-        ('hi', 'स्कूल'): 'school',
-        ('hi', 'दोस्त'): 'friend',
-        ('hi', 'पैसा'): 'money',
-        ('hi', 'समय'): 'time',
-        ('hi', 'काम'): 'work',
-        ('hi', 'बड़ा'): 'big',
-        ('hi', 'छोटा'): 'small',
-        ('hi', 'अच्छा'): 'good',
-        ('hi', 'बुरा'): 'bad',
-        ('hi', 'सुंदर'): 'beautiful',
-        ('hi', 'खुश'): 'happy',
-        ('hi', 'दुखी'): 'sad',
-        ('hi', 'दिन'): 'day',
-        ('hi', 'रात'): 'night',
-    }
-    key = (language, word.lower())
-    if key in known:
-        return known[key]
-    return None
 
-def repair_vocabulary():
+def repair_vocabulary_table():
     conn = db.get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT id, user_id, word, language, meaning
-        FROM vocabulary
-    """)
+    cursor.execute("SELECT id, word, language, meaning FROM vocabulary")
     rows = cursor.fetchall()
-    total = len(rows)
+
     repaired = 0
-    skipped_good = 0
-    skipped_no_meaning = 0
+    skipped = 0
     examples = []
 
-    print(f"Found {total} vocabulary entries. Scanning for bad definitions...\n")
-
-    for row_id, user_id, word, language, meaning in rows:
-        if meaning and not is_bad_meaning(meaning):
-            skipped_good += 1
+    for row_id, word, lang, meaning in rows:
+        if not meaning:
+            lang = lang or "es"
+            definition = dictionary_service.get_meaning(word, lang)
+            if definition:
+                cursor.execute(
+                    "UPDATE vocabulary SET meaning=? WHERE id=?",
+                    (definition["meaning"], row_id),
+                )
+                repaired += 1
+                examples.append((word, meaning or "(empty)", definition["meaning"]))
+            else:
+                cursor.execute(
+                    "UPDATE vocabulary SET meaning='Meaning currently unavailable' WHERE id=? AND (meaning IS NULL OR meaning='')",
+                    (row_id,),
+                )
+                repaired += 1
+                examples.append((word, meaning or "(empty)", "Meaning currently unavailable"))
             continue
 
-        old_meaning = meaning or '(empty)'
-        new_meaning = None
-
-        if api_service.is_online():
-            info = api_service.get_enhanced_word_info(word, language)
-            if info and info.get('definition'):
-                d = info['definition']
-                if not is_bad_meaning(d):
-                    new_meaning = d
-
-        if not new_meaning or is_bad_meaning(new_meaning):
-            new_meaning = generate_fallback(word, language)
-
-        if new_meaning and not is_bad_meaning(new_meaning):
-            cursor.execute(
-                "UPDATE vocabulary SET meaning = ?, is_valid = 1 WHERE id = ?",
-                (new_meaning, row_id)
-            )
-            repaired += 1
-            examples.append((word, language, old_meaning, new_meaning))
-            print(f"  REPAIRED: {word} ({language})")
-            print(f"    Was: {old_meaning}")
-            print(f"    Now: {new_meaning}\n")
+        if is_placeholder_meaning(meaning, word):
+            lang = lang or "es"
+            definition = dictionary_service.get_meaning(word, lang)
+            if definition:
+                cursor.execute(
+                    "UPDATE vocabulary SET meaning=? WHERE id=?",
+                    (definition["meaning"], row_id),
+                )
+                repaired += 1
+                examples.append((word, meaning, definition["meaning"]))
+            else:
+                cursor.execute(
+                    "UPDATE vocabulary SET meaning=? WHERE id=?",
+                    ("Meaning currently unavailable", row_id),
+                )
+                repaired += 1
+                examples.append((word, meaning, "Meaning currently unavailable"))
         else:
-            skipped_no_meaning += 1
+            skipped += 1
 
     conn.commit()
     conn.close()
 
-    print("=" * 60)
-    print(f"Total entries scanned: {total}")
-    print(f"Already had good definitions: {skipped_good}")
-    print(f"Repaired: {repaired}")
-    print(f"Still need definitions (no source found): {skipped_no_meaning}")
-    print("=" * 60)
+    return repaired, skipped, examples
 
-    if examples:
-        print("\nSample before/after:")
-        for word, lang, old, new in examples[:5]:
-            print(f"  {word} ({lang}): '{old}' -> '{new}'")
-
-def repair_vocabulary_discovery():
-    conn = db.get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT id, user_id, word, language, meaning
-        FROM vocabulary_discovery WHERE viewed = 0
-    """)
-    rows = cursor.fetchall()
-    repaired = 0
-
-    for row_id, user_id, word, language, meaning in rows:
-        if meaning and not is_bad_meaning(meaning):
-            continue
-
-        new_meaning = None
-        if api_service.is_online():
-            info = api_service.get_enhanced_word_info(word, language)
-            if info and info.get('definition'):
-                d = info['definition']
-                if not is_bad_meaning(d):
-                    new_meaning = d
-
-        if not new_meaning or is_bad_meaning(new_meaning):
-            new_meaning = generate_fallback(word, language)
-
-        if new_meaning and not is_bad_meaning(new_meaning):
-            cursor.execute(
-                "UPDATE vocabulary_discovery SET meaning = ? WHERE id = ?",
-                (new_meaning, row_id)
-            )
-            repaired += 1
-            print(f"  REPAIRED discovery: {word} ({language}) -> {new_meaning}")
-
-    conn.commit()
-    conn.close()
-    print(f"\nRepaired discovery entries: {repaired}")
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("VOCABULARY DEFINITION REPAIR SCRIPT")
+    print("  Vocabulary Definition Repair Tool")
     print("=" * 60)
-    repair_vocabulary()
-    print("\n---\n")
-    repair_vocabulary_discovery()
-    print("\nDone.")
+
+    count_before = 0
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM vocabulary")
+    count_before = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM vocabulary WHERE meaning IS NULL OR meaning=''")
+    empty_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM vocabulary WHERE meaning LIKE 'Meaning of %'")
+    placeholder_count = cursor.fetchone()[0]
+    conn.close()
+
+    print(f"\nTotal vocabulary entries: {count_before}")
+    print(f"Empty meanings: {empty_count}")
+    print(f"Placeholder 'Meaning of...': {placeholder_count}")
+
+    repaired, skipped, examples = repair_vocabulary_table()
+
+    print(f"\nRepaired: {repaired}")
+    print(f"Skipped (already valid): {skipped}")
+
+    if examples:
+        print("\nBefore → After Examples:")
+        print("-" * 50)
+        for word, before, after in examples[:10]:
+            print(f"  {word:<15} | '{before}' → '{after}'")
+        if len(examples) > 10:
+            print(f"  ... and {len(examples) - 10} more")
+
+    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM vocabulary WHERE meaning IS NULL OR meaning='' OR meaning LIKE 'Meaning of %'")
+    remaining = cursor.fetchone()[0]
+    conn.close()
+
+    print(f"\nRemaining with issues: {remaining}")
+    if remaining == 0:
+        print("SUCCESS: All vocabulary entries have real meanings.")
+    else:
+        print(f"WARNING: {remaining} entries still need attention.")
+    print("=" * 60)

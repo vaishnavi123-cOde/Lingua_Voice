@@ -1,7 +1,7 @@
 {% extends "base_sidebar.html" %}
 {% block title %}{{ title }} - LinguaVoice{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
-{% block page_subtitle %}{{ lesson_data.exercise_count }} exercises · {{ lesson_data.word_count }} words{% endblock %}
+{% block page_subtitle %}{{ lesson_data.stage_order|length }} stages · {{ lesson_data.word_count }} words to learn{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/lesson.css') }}">
@@ -10,71 +10,128 @@
 {% block content %}
 <div class="lesson-container">
 
-    <!-- ── Progress Header ────────────────────────────── -->
     <div class="lesson-header">
         <a href="/learning_path" class="btn-ghost lesson-back">✕</a>
         <div class="lesson-progress-bar">
             <div class="lesson-progress-fill" id="progress-fill" style="width:0%"></div>
         </div>
-        <span class="lesson-progress-text" id="progress-text">0 / {{ lesson_data.exercise_count }}</span>
+        <span class="lesson-progress-text" id="progress-text">{{ lesson_data.exercise_count }} exercises</span>
         <div class="lesson-xp-counter" id="xp-counter">+0</div>
     </div>
 
-    <!-- ── Main Exercise Area + AI Companion ──────────── -->
     <div class="lesson-body">
 
-        <!-- Exercise Area -->
         <div class="lesson-exercise-area" id="exercise-area">
 
-            <!-- SRS Review Banner (shown at breakpoints) -->
-            <div id="srs-banner" class="srs-banner" style="display:none;">
-                <div class="srs-banner-icon">🔄</div>
-                <div class="srs-banner-text">Review time! Let's reinforce what you've learned.</div>
+            {# ── Onboarding Screen ─────────────────────────────────── #}
+            <div id="onboarding-screen" class="onboarding-screen">
+                <div class="onboarding-orb">🎯</div>
+                <h1 class="onboarding-title">{{ title }}</h1>
+                <div class="onboarding-stats">
+                    <div class="onboarding-stat">
+                        <span class="onboarding-stat-icon">📖</span>
+                        <span class="onboarding-stat-value">{{ lesson_data.new_word_count }}</span>
+                        <span class="onboarding-stat-label">New words</span>
+                    </div>
+                    <div class="onboarding-stat">
+                        <span class="onboarding-stat-icon">🔄</span>
+                        <span class="onboarding-stat-value">{{ lesson_data.review_word_count }}</span>
+                        <span class="onboarding-stat-label">Review</span>
+                    </div>
+                    <div class="onboarding-stat">
+                        <span class="onboarding-stat-icon">⏱️</span>
+                        <span class="onboarding-stat-value">{{ (lesson_data.exercise_count * 0.6)|round|int }}</span>
+                        <span class="onboarding-stat-label">Minutes</span>
+                    </div>
+                    <div class="onboarding-stat">
+                        <span class="onboarding-stat-icon">⭐</span>
+                        <span class="onboarding-stat-value">{{ lesson_data.total_xp }}</span>
+                        <span class="onboarding-stat-label">Max XP</span>
+                    </div>
+                </div>
+                <p class="onboarding-objective">Master these words through reading, listening, speaking, and context exercises.</p>
+                <button class="btn btn-primary btn-lg" onclick="startLesson()">Begin →</button>
             </div>
 
-            <!-- Exercise Card -->
-            <div class="exercise-card" id="exercise-card">
-
-                <!-- Progress dots for current word -->
-                <div class="word-dots" id="word-dots"></div>
-
-                <!-- Exercise content renders here -->
-                <div id="exercise-content" class="exercise-content">
-                    <div class="exercise-loading">Loading lesson...</div>
+            {# ── Exercise Card ─────────────────────────────────────── #}
+            <div class="exercise-card" id="exercise-card" style="display:none;">
+                <div class="exercise-header">
+                    <span class="exercise-counter" id="exercise-counter"></span>
+                    <span class="exercise-word-type" id="exercise-word-type"></span>
                 </div>
-
-                <!-- Answer area -->
+                <div id="exercise-content" class="exercise-content">
+                    <div class="exercise-skeleton" id="exercise-skeleton">
+                        <div class="skeleton-pulse skeleton-title"></div>
+                        <div class="skeleton-pulse skeleton-text"></div>
+                        <div class="skeleton-pulse skeleton-text short"></div>
+                        <div class="skeleton-pulse skeleton-button"></div>
+                    </div>
+                </div>
                 <div id="answer-area" class="answer-area"></div>
-
-                <!-- Action buttons -->
                 <div class="exercise-actions" id="exercise-actions" style="display:none;">
                     <button class="btn btn-primary btn-lg" id="check-btn" onclick="checkAnswer()">Check</button>
                 </div>
             </div>
 
-            <!-- Completion screen (hidden initially) -->
+            {# ── Completion Screen ─────────────────────────────────── #}
             <div id="completion-screen" class="completion-screen" style="display:none;">
-                <div class="completion-orb" id="completion-orb">🎉</div>
+                <div class="completion-orb" id="completion-orb">
+                    <span class="completion-orb-icon">🎉</span>
+                    <div class="completion-orb-ring"></div>
+                </div>
                 <h2 class="completion-title">Lesson Complete!</h2>
-                <div class="completion-stats">
-                    <div class="completion-stat">
-                        <span class="completion-stat-value" id="completion-score">0%</span>
-                        <span class="completion-stat-label">Accuracy</span>
+                <div class="completion-stats-grid">
+                    <div class="completion-stat-card highlight-card">
+                        <div class="csc-icon">⭐</div>
+                        <div class="csc-value" id="completion-xp">+0</div>
+                        <div class="csc-label">XP Earned</div>
                     </div>
-                    <div class="completion-stat">
-                        <span class="completion-stat-value" id="completion-xp">+0</span>
-                        <span class="completion-stat-label">XP Earned</span>
+                    <div class="completion-stat-card">
+                        <div class="csc-icon">🎯</div>
+                        <div class="csc-value" id="completion-accuracy">0%</div>
+                        <div class="csc-label">Accuracy</div>
+                    </div>
+                    <div class="completion-stat-card">
+                        <div class="csc-icon">📚</div>
+                        <div class="csc-value" id="completion-words-learned">0</div>
+                        <div class="csc-label">New Words</div>
+                    </div>
+                    <div class="completion-stat-card">
+                        <div class="csc-icon">🔄</div>
+                        <div class="csc-value" id="completion-words-reviewed">0</div>
+                        <div class="csc-label">Reviewed</div>
+                    </div>
+                    <div class="completion-stat-card">
+                        <div class="csc-icon">🎤</div>
+                        <div class="csc-value" id="completion-speaking">—</div>
+                        <div class="csc-label">Speaking</div>
+                    </div>
+                    <div class="completion-stat-card">
+                        <div class="csc-icon">👂</div>
+                        <div class="csc-value" id="completion-listening">—</div>
+                        <div class="csc-label">Listening</div>
+                    </div>
+                    <div class="completion-stat-card">
+                        <div class="csc-icon">🔥</div>
+                        <div class="csc-value" id="completion-streak">{{ lesson_data.streak_days or 0 }}</div>
+                        <div class="csc-label">Day Streak</div>
+                    </div>
+                    <div class="completion-stat-card completion-streak-card" id="completion-streak-card" style="display:none;">
+                        <div class="csc-icon">⚡</div>
+                        <div class="csc-value" id="completion-combo">0</div>
+                        <div class="csc-label">Best Combo</div>
                     </div>
                 </div>
-                <div class="completion-words" id="completion-words"></div>
+                <div class="completion-message" id="completion-message"></div>
+                <div class="completion-new-words" id="completion-new-words-list"></div>
                 <div class="completion-actions">
                     <a href="/learning_path" class="btn btn-secondary">Learning Path</a>
-                    <a href="/lesson/{{ lesson_data.level_id }}" class="btn btn-primary">Next Lesson →</a>
+                    <a href="/lesson/{{ lesson_data.level_id + 1 }}" class="btn btn-primary" id="next-lesson-btn">Next Lesson →</a>
                 </div>
             </div>
         </div>
 
-        <!-- ── AI Companion Panel ──────────────────────── -->
+        {# ── AI Companion Panel ───────────────────────────────────── #}
         <div class="ai-companion-panel" id="ai-panel">
             <div class="ai-panel-header" onclick="toggleAiPanel()">
                 <div class="ai-orb" id="ai-orb">🤖</div>
@@ -85,13 +142,14 @@
                 <div class="ai-messages" id="ai-messages">
                     <div class="ai-message ai-message-in">
                         <div class="ai-avatar">🤖</div>
-                        <div class="ai-bubble">Hi! I'm your coach. Need help with a word? Click Explain, Example, or just ask me!</div>
+                        <div class="ai-bubble">Hi! I'm your coach. Need help? Just ask!</div>
                     </div>
                 </div>
                 <div class="ai-quick-actions">
                     <button class="ai-quick-btn" onclick="aiQuickAction('explain')">💡 Explain</button>
                     <button class="ai-quick-btn" onclick="aiQuickAction('example')">📝 Example</button>
                     <button class="ai-quick-btn" onclick="aiQuickAction('encourage')">🔥 Encourage</button>
+                    <button class="ai-quick-btn" onclick="aiQuickAction('translate')">🌍 Translate</button>
                 </div>
                 <div class="ai-input-area">
                     <input type="text" class="ai-input" id="ai-input" placeholder="Ask me anything..." onkeydown="if(event.key==='Enter')aiSendMessage()">
@@ -102,18 +160,22 @@
     </div>
 </div>
 
-<!-- ── XP Float Animation Container ─────────────────── -->
+<div id="feedback-overlay" class="feedback-overlay-global" style="display:none;"></div>
 <div id="xp-float-container" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;"></div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// ── State ──────────────────────────────────────────────────────
 const EXERCISES = {{ lesson_data.exercises|tojson|safe }};
 const TOTAL_XP = {{ lesson_data.total_xp }};
 const LEVEL_ID = {{ lesson_data.level_id }};
 const LANGUAGE = '{{ lesson_data.language }}';
-const REVIEW_BREAKPOINTS = {{ lesson_data.review_breakpoints|tojson|safe }};
+const NEW_WORD_COUNT = {{ lesson_data.new_word_count }};
+const REVIEW_WORD_COUNT = {{ lesson_data.review_word_count }};
+const WORDS = {{ lesson_data.words|tojson|safe }};
+
+const LANG_NAMES = {en: 'English', es: 'Spanish', hi: 'Hindi', fr: 'French'};
+const LANG_CODES = {en: 'en-US', es: 'es-ES', hi: 'hi-IN', fr: 'fr-FR'};
 
 let currentIndex = 0;
 let score = 0;
@@ -124,313 +186,522 @@ let isChecking = false;
 let currentExercise = null;
 let aiPanelOpen = true;
 let recognition = null;
+let stageStats = {};
+let exerciseStartTime = 0;
+let hasStarted = false;
+let correctStreak = 0;
+let bestCombo = 0;
+let answeredWords = {};
 
-// ── Init ───────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-    renderExercise(0);
-});
+const nonSummaryExercises = EXERCISES.filter(e => e.stage !== 'summary');
+const totalExercises = nonSummaryExercises.length;
 
-// ── Exercise Rendering ─────────────────────────────────────────
-function renderExercise(index) {
-    if (index >= EXERCISES.length) {
-        showCompletion();
-        return;
-    }
+function $(id) { return document.getElementById(id); }
+
+/* ── Lesson lifecycle ──────────────────────────── */
+function startLesson() {
+    hasStarted = true;
+    $('onboarding-screen').style.display = 'none';
+    $('exercise-card').style.display = 'flex';
+    loadExercise(0);
+}
+
+function loadExercise(index) {
+    if (index >= EXERCISES.length) { showCompletion(); return; }
 
     currentIndex = index;
     currentExercise = EXERCISES[index];
     isChecking = false;
 
     updateProgress(index);
+    exerciseStartTime = Date.now();
+    if (currentExercise.stage === 'summary') { showCompletion(); return; }
 
-    // Check for SRS breakpoint
-    const srsBanner = document.getElementById('srs-banner');
-    if (REVIEW_BREAKPOINTS.includes(index)) {
-        srsBanner.style.display = 'flex';
-        setTimeout(() => { srsBanner.style.display = 'none'; }, 2000);
+    // Reset check button to its initial "Check" state
+    const btn = $('check-btn');
+    btn.textContent = 'Check';
+    btn.className = 'btn btn-primary btn-lg';
+    btn.onclick = checkAnswer;
+    btn.style.display = '';
+
+    const container = $('exercise-content');
+    const answerArea = $('answer-area');
+    const actions = $('exercise-actions');
+
+    // Animate out then render
+    container.style.opacity = '0';
+    container.style.transform = 'translateY(8px)';
+    container.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+
+    setTimeout(() => {
+        container.innerHTML = '';
+        answerArea.innerHTML = '';
+        actions.style.display = 'none';
+        container.style.opacity = '';
+        container.style.transform = '';
+        container.style.transition = '';
+        container.style.animation = 'none';
+        void container.offsetWidth;
+        container.style.animation = 'fadeUp 0.35s ease';
+
+        renderStage(currentExercise);
+    }, 180);
+}
+
+function renderStage(ex) {
+    const container = $('exercise-content');
+    const answerArea = $('answer-area');
+    const actions = $('exercise-actions');
+    const counter = $('exercise-counter');
+    const typeLabel = $('exercise-word-type');
+
+    // Exercise counter
+    const doneEx = nonSummaryExercises.filter(e =>
+        (e.word_index || 0) < (ex.word_index || 0) ||
+        ((e.word_index || 0) === (ex.word_index || 0) &&
+         nonSummaryExercises.indexOf(e) < nonSummaryExercises.indexOf(ex))
+    ).length;
+    counter.textContent = `${Math.min(doneEx + 1, totalExercises)} / ${totalExercises}`;
+
+    // Word type badge
+    if (ex.word_type === 'new') {
+        typeLabel.textContent = 'New word';
+        typeLabel.className = 'exercise-word-type exercise-word-type-new';
+    } else if (ex.word_type === 'review') {
+        typeLabel.textContent = 'Review';
+        typeLabel.className = 'exercise-word-type exercise-word-type-review';
     } else {
-        srsBanner.style.display = 'none';
+        typeLabel.textContent = '';
+        typeLabel.className = 'exercise-word-type';
     }
-
-    const ex = currentExercise;
-    const container = document.getElementById('exercise-content');
-    const answerArea = document.getElementById('answer-area');
-    const actions = document.getElementById('exercise-actions');
-
-    // Update word dots
-    renderWordDots(ex);
-
-    // Clear previous
-    answerArea.innerHTML = '';
-    actions.style.display = 'none';
 
     const xpBadge = `<div class="exercise-xp-badge">+${ex.xp} XP</div>`;
+    const langFlag = ex.language === 'es' ? '🇪🇸' : ex.language === 'hi' ? '🇮🇳' : ex.language === 'fr' ? '🇫🇷' : '🇺🇸';
 
-    switch (ex.type) {
-        case 'learn':
-            container.innerHTML = `
-                ${xpBadge}
-                <div class="ex-learn">
-                    <div class="ex-learn-word">${ex.word}</div>
-                    <div class="ex-learn-meaning">${ex.meaning}</div>
-                    <div class="ex-learn-example">${ex.example || ''}</div>
-                </div>
-                <div class="ex-hint">Read and remember this word.</div>
-            `;
-            answerArea.innerHTML = `<button class="btn btn-primary btn-lg" onclick="nextExercise()">Continue →</button>`;
-            break;
+    const esc = v => (v || '').replace(/'/g, "\\'");
+    const safe = v => v || '';
+    const w = safe(ex.word);
+    const m = safe(ex.meaning);
+    const cor = safe(ex.correct || ex.word);
+    const opts = ex.options || [];
 
-        case 'listen':
-            container.innerHTML = `
-                ${xpBadge}
-                <div class="ex-listen">
-                    <div class="ex-listen-prompt">Listen and select the correct word:</div>
-                    <button class="btn btn-secondary listen-btn" onclick="speakWord('${ex.correct.replace(/'/g,"\\'")}','${ex.language}')">
-                        🔊 Play
-                    </button>
+    switch (ex.stage) {
+
+    case 'introduction':
+        container.innerHTML = `
+            ${xpBadge}
+            <div class="stage-introduction">
+                <div class="intro-word-display">
+                    <div class="intro-lang-tag">${langFlag} ${LANG_NAMES[ex.language] || ex.language}</div>
+                    <div class="intro-word">${w}</div>
+                    <div class="intro-pronunciation">${safe(ex.pronunciation)}</div>
+                    <div class="intro-meaning">${m}</div>
+                    <div class="intro-explanation">${safe(ex.explanation)}</div>
+                    <button class="intro-audio-btn" data-word="${esc(w)}" data-lang="${safe(ex.language)}">🔊 Listen</button>
                 </div>
+                ${ex.sentence ? `
+                <div class="intro-sentence-card">
+                    <div class="intro-sentence">${ex.sentence}</div>
+                    ${ex.sentence_translation ? `<div class="intro-sentence-translation">${ex.sentence_translation}</div>` : ''}
+                </div>` : ''}
+            </div>
+        `;
+        answerArea.innerHTML = `<button class="btn btn-primary btn-lg" onclick="nextExercise()">Continue →</button>`;
+        // Wire up audio button without inline onclick (avoids quote-escaping issues)
+        setTimeout(() => {
+            const ab = container.querySelector('.intro-audio-btn');
+            if (ab) ab.onclick = () => speakWord(ab.dataset.word, ab.dataset.lang);
+        }, 50);
+        break;
+
+    case 'recognition':
+        container.innerHTML = `
+            ${xpBadge}
+            <div class="stage-recognition">
+                <div class="recognition-prompt">${ex.mode === 'meaning'
+                    ? `What does "<strong>${w}</strong>" mean?`
+                    : `Which word means "<strong>${m}</strong>"?`}</div>
+                <div class="recognition-word">${ex.mode === 'word_pick' ? m : w}</div>
+            </div>
+        `;
+        answerArea.innerHTML = `
+            <div class="ex-options">
+                ${opts.map((opt, i) => {
+                    const val = safe(opt.value || opt);
+                    const lbl = safe(opt.label || opt);
+                    return `<button class="option-btn" data-value="${val.replace(/"/g, '&quot;')}" data-index="${i}">${lbl}</button>`;
+                }).join('')}
+            </div>
+        `;
+        // Wire up option buttons
+        setTimeout(() => {
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.onclick = () => selectOption(btn);
+            });
+        }, 50);
+        actions.style.display = 'flex';
+        break;
+
+    case 'listening':
+        container.innerHTML = `
+            ${xpBadge}
+            <div class="stage-listening">
+                <div class="listening-prompt">Listen and choose the correct word:</div>
+                <button class="btn btn-secondary listen-btn" data-word="${esc(cor)}" data-lang="${safe(ex.language)}">🔊 Play Sound</button>
+            </div>
+        `;
+        answerArea.innerHTML = `
+            <div class="ex-options">
+                ${opts.map((opt, i) => {
+                    const val = safe(opt.value || opt);
+                    const lbl = safe(opt.label || opt);
+                    return `<button class="option-btn" data-value="${val.replace(/"/g, '&quot;')}">${lbl}</button>`;
+                }).join('')}
+            </div>
+        `;
+        // Wire up buttons
+        setTimeout(() => {
+            const lb = container.querySelector('.listen-btn');
+            if (lb) lb.onclick = () => speakWord(lb.dataset.word, lb.dataset.lang);
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.onclick = () => selectOption(btn);
+            });
+            try { speakWord(cor, ex.language); } catch(e) {}
+        }, 50);
+        actions.style.display = 'flex';
+        break;
+
+    case 'speaking':
+        container.innerHTML = `
+            ${xpBadge}
+            <div class="stage-speaking">
+                <div class="speaking-prompt">Say this word aloud:</div>
+                <div class="speaking-word">${safe(ex.prompt_text || w)}</div>
+                <div class="speaking-meaning">${safe(ex.prompt_meaning || m)}</div>
+                <button class="btn btn-primary speak-btn" data-word="${esc(ex.prompt_text || w)}">🎤 Tap & Speak</button>
+                <div id="speech-result" class="speech-result"></div>
+            </div>
+        `;
+        setTimeout(() => {
+            const sb = container.querySelector('.speak-btn');
+            if (sb) sb.onclick = () => startSpeechRecognition(sb.dataset.word);
+        }, 50);
+        actions.style.display = 'none';
+        break;
+
+    case 'context':
+        container.innerHTML = `
+            ${xpBadge}
+            <div class="stage-context">
+                ${ex.mode === 'fill_blank'
+                    ? `<div class="context-prompt">Fill in the blank:</div>
+                       <div class="context-sentence">${safe(ex.sentence)}</div>
+                       ${ex.sentence_translation ? `<div class="context-translation">${safe(ex.sentence_translation)}</div>` : ''}`
+                    : ex.mode === 'meaning_select'
+                        ? `<div class="context-prompt">What does this word mean here?</div>
+                           <div class="context-example">"${safe(ex.context_sentence)}"</div>
+                           <div class="context-word">${w}</div>`
+                        : `<div class="context-prompt">Complete the sentence:</div>
+                           <div class="context-sentence">${safe(ex.prompt_stem)}</div>`
+                }
+            </div>
+        `;
+        if (ex.mode === 'fill_blank') {
+            answerArea.innerHTML = `
+                <input type="text" class="ex-input" id="context-input" placeholder="Type the missing word..." autofocus
+                    onkeydown="if(event.key==='Enter')checkAnswer()">
             `;
+            actions.style.display = 'flex';
+            setTimeout(() => $('context-input')?.focus(), 150);
+        } else if (ex.mode === 'meaning_select' || ex.mode === 'sentence_complete') {
             answerArea.innerHTML = `
                 <div class="ex-options">
-                    ${ex.options.map((opt, i) => `
-                        <button class="option-btn" onclick="selectOption(this, '${opt.replace(/'/g,"\\'")}')" data-value="${opt}">
-                            ${opt}
-                        </button>
-                    `).join('')}
+                    ${opts.map((opt, i) => {
+                        const val = safe(opt.value || opt);
+                        const lbl = safe(opt.label || opt);
+                        return `<button class="option-btn" data-value="${val.replace(/"/g, '&quot;')}">${lbl}</button>`;
+                    }).join('')}
                 </div>
             `;
-            actions.style.display = 'flex';
-            // Auto-play
-            setTimeout(() => speakWord(ex.correct, ex.language), 500);
-            break;
+                    setTimeout(() => {
+                        document.querySelectorAll('.option-btn').forEach(btn => {
+                            btn.onclick = () => selectOption(btn);
+                        });
+                    }, 50);
+                    actions.style.display = 'flex';
+                }
+                break;
 
-        case 'speak':
-            container.innerHTML = `
-                ${xpBadge}
-                <div class="ex-speak">
-                    <div class="ex-speak-prompt">Say the word:</div>
-                    <div class="ex-speak-word">${ex.word}</div>
-                    <div class="ex-speak-meaning">${ex.meaning}</div>
-                    <button class="btn btn-primary speak-btn" onclick="startSpeechRecognition('${ex.word.replace(/'/g,"\\'")}')">
-                        🎤 Speak
-                    </button>
-                    <div id="speech-result" class="speech-result"></div>
-                </div>
-            `;
-            actions.style.display = 'none';
-            break;
+    case 'active_recall':
+        container.innerHTML = `
+            ${xpBadge}
+            <div class="stage-recall">
+                ${ex.mode === 'translate'
+                    ? `<div class="recall-prompt">Translate to ${LANG_NAMES[LANGUAGE] || 'English'}:</div>
+                       <div class="recall-word">${safe(ex.prompt)}</div>`
+                    : `<div class="recall-prompt">${safe(ex.prompt) || 'What is the word for:'}</div>
+                       <div class="recall-word">${safe(ex.prompt_word || m)}</div>`
+                }
+            </div>
+        `;
+        answerArea.innerHTML = `
+            <input type="text" class="ex-input" id="recall-input" placeholder="Type your answer..." autofocus
+                onkeydown="if(event.key==='Enter')checkAnswer()">
+        `;
+        actions.style.display = 'flex';
+        setTimeout(() => $('recall-input')?.focus(), 150);
+        break;
 
-        case 'translate':
-            container.innerHTML = `
-                ${xpBadge}
-                <div class="ex-translate">
-                    <div class="ex-translate-prompt">Translate to ${LANGUAGE === 'en' ? 'Spanish' : 'English'}:</div>
-                    <div class="ex-translate-word">${ex.prompt}</div>
-                </div>
-            `;
-            answerArea.innerHTML = `
-                <input type="text" class="ex-input" id="translate-input" placeholder="Type your answer..." autofocus
-                    onkeydown="if(event.key==='Enter')checkAnswer()">
-            `;
-            actions.style.display = 'flex';
-            setTimeout(() => document.getElementById('translate-input')?.focus(), 100);
-            break;
-
-        case 'sentence':
-            container.innerHTML = `
-                ${xpBadge}
-                <div class="ex-sentence">
-                    <div class="ex-sentence-prompt">Fill in the blank:</div>
-                    <div class="ex-sentence-text">${ex.sentence}</div>
-                </div>
-            `;
-            answerArea.innerHTML = `
-                <input type="text" class="ex-input" id="sentence-input" placeholder="Type the missing word..." autofocus
-                    onkeydown="if(event.key==='Enter')checkAnswer()">
-            `;
-            actions.style.display = 'flex';
-            setTimeout(() => document.getElementById('sentence-input')?.focus(), 100);
-            break;
-
-        case 'recall':
-            container.innerHTML = `
-                ${xpBadge}
-                <div class="ex-recall">
-                    <div class="ex-recall-prompt">What is the word for:</div>
-                    <div class="ex-recall-meaning">${ex.prompt}</div>
-                </div>
-            `;
-            answerArea.innerHTML = `
-                <input type="text" class="ex-input" id="recall-input" placeholder="Type the word..." autofocus
-                    onkeydown="if(event.key==='Enter')checkAnswer()">
-            `;
-            actions.style.display = 'flex';
-            setTimeout(() => document.getElementById('recall-input')?.focus(), 100);
-            break;
-
-        case 'review':
-            container.innerHTML = `
-                <div class="ex-review">
-                    <div class="ex-review-icon">🔄</div>
-                    <div class="ex-review-prompt">Quick review — do you remember this word?</div>
-                    <div class="ex-review-word">${ex.word}</div>
-                    ${ex.meaning ? `<div class="ex-review-meaning">${ex.meaning}</div>` : ''}
-                </div>
-            `;
-            answerArea.innerHTML = `
-                <div class="ex-review-actions">
-                    <button class="btn btn-secondary btn-lg" onclick="handleReview(false)">Still Learning</button>
-                    <button class="btn btn-primary btn-lg" onclick="handleReview(true)">Got it!</button>
-                </div>
-            `;
-            break;
-
-        default:
-            container.innerHTML = `<div class="exercise-loading">Unknown exercise type: ${ex.type}</div>`;
+    default:
+        container.innerHTML = `<div class="exercise-loading">Loading...</div>`;
     }
 }
 
-function renderWordDots(ex) {
-    const dots = document.getElementById('word-dots');
-    if (!ex.word_index && ex.word_index !== 0) {
-        dots.innerHTML = '';
-        return;
-    }
-    // Find exercises for the same word
-    const wordExs = EXERCISES.filter(e => e.word === ex.word);
-    const currentPos = wordExs.indexOf(ex);
-    dots.innerHTML = wordExs.map((_, i) =>
-        `<div class="word-dot ${i < currentPos ? 'done' : i === currentPos ? 'current' : ''}"></div>`
-    ).join('');
-}
-
-// ── Answer Checking ───────────────────────────────────────────
-function selectOption(btn, value) {
-    document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    btn.dataset.selected = 'true';
-}
-
-function checkAnswer() {
-    if (isChecking) return;
-    if (!currentExercise) return;
-
-    const ex = currentExercise;
-    let userAnswer = '';
-    let isCorrect = false;
-
-    switch (ex.type) {
-        case 'listen': {
-            const selected = document.querySelector('.option-btn.selected');
-            if (!selected) {
-                showToast('Please select an answer.');
-                return;
-            }
-            userAnswer = selected.dataset.value;
-            isCorrect = userAnswer.toLowerCase().trim() === ex.correct.toLowerCase().trim();
-            highlightOptions(ex.correct, isCorrect);
-            break;
-        }
-        case 'translate': {
-            const input = document.getElementById('translate-input');
-            if (!input || !input.value.trim()) {
-                showToast('Type your answer.');
-                return;
-            }
-            userAnswer = input.value.trim();
-            isCorrect = userAnswer.toLowerCase() === ex.correct.toLowerCase();
-            showFeedback(isCorrect, ex.correct, userAnswer);
-            break;
-        }
-        case 'sentence': {
-            const input = document.getElementById('sentence-input');
-            if (!input || !input.value.trim()) {
-                showToast('Type the missing word.');
-                return;
-            }
-            userAnswer = input.value.trim();
-            isCorrect = userAnswer.toLowerCase() === ex.correct.toLowerCase();
-            showFeedback(isCorrect, ex.correct, userAnswer);
-            break;
-        }
-        case 'recall': {
-            const input = document.getElementById('recall-input');
-            if (!input || !input.value.trim()) {
-                showToast('Type the word.');
-                return;
-            }
-            userAnswer = input.value.trim();
-            isCorrect = userAnswer.toLowerCase() === ex.correct.toLowerCase();
-            showFeedback(isCorrect, ex.correct, userAnswer);
-            break;
-        }
-        default:
-            return;
-    }
-
-    isChecking = true;
-    totalAnswered++;
-
-    if (isCorrect) {
-        score++;
-        xpEarned += ex.xp;
-        updateXpCounter(ex.xp);
-        spawnXpFloat(ex.xp);
-    }
-
-    // Track word progress
-    trackWordProgress(ex.word, isCorrect);
-
-    document.getElementById('check-btn').textContent = isCorrect ? '✓ Correct' : 'Continue';
-    document.getElementById('check-btn').onclick = () => {
-        if (currentIndex + 1 < EXERCISES.length) {
-            renderExercise(currentIndex + 1);
-        } else {
-            showCompletion();
-        }
-    };
-}
-
-function handleReview(isCorrect) {
-    const ex = currentExercise;
-    totalAnswered++;
-    if (isCorrect) {
-        score++;
-        xpEarned += ex.xp;
-        updateXpCounter(ex.xp);
-    }
-    trackWordProgress(ex.word, isCorrect);
+function nextExercise() {
     if (currentIndex + 1 < EXERCISES.length) {
-        renderExercise(currentIndex + 1);
+        loadExercise(currentIndex + 1);
     } else {
         showCompletion();
     }
 }
 
-function trackWordProgress(word, correct) {
-    const existing = wordProgress.find(w => w.word === word);
-    if (existing) {
-        existing.correct = existing.correct && correct;
-        existing.count++;
-    } else {
-        wordProgress.push({word, correct, count: 1, response_time_ms: 1000});
+function selectOption(btn) {
+    document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    btn.dataset.selected = 'true';
+}
+
+/* ── Answer checking ──────────────────────────── */
+function checkAnswer() {
+    try {
+        if (isChecking) { showToast('Already checking...'); return; }
+        if (!currentExercise) { showToast('No active exercise.'); return; }
+
+        const ex = currentExercise;
+        let userAnswer = '';
+        let isCorrect = false;
+
+        if (ex.stage === 'recognition' || ex.stage === 'listening') {
+            const selected = document.querySelector('.option-btn.selected');
+            if (!selected) { showToast('Please select an answer.'); return; }
+            userAnswer = selected.dataset.value;
+            if (userAnswer == null) { showToast('Invalid selection.'); return; }
+            isCorrect = userAnswer.toLowerCase().trim() === (ex.correct || '').toLowerCase().trim();
+            highlightOptions(ex.correct, isCorrect);
+
+        } else if (ex.stage === 'context') {
+            if (ex.mode === 'fill_blank') {
+                const input = $('context-input');
+                if (!input || !input.value.trim()) { showToast('Type the missing word.'); return; }
+                userAnswer = input.value.trim();
+                isCorrect = userAnswer.toLowerCase() === (ex.correct || '').toLowerCase();
+                showInlineFeedback(isCorrect, ex.correct, userAnswer, ex.meaning);
+            } else {
+                const selected = document.querySelector('.option-btn.selected');
+                if (!selected) { showToast('Please select an answer.'); return; }
+                userAnswer = selected.dataset.value;
+                isCorrect = userAnswer.toLowerCase().trim() === (ex.correct || '').toLowerCase().trim();
+                highlightOptions(ex.correct, isCorrect);
+            }
+
+        } else if (ex.stage === 'active_recall') {
+            const input = $('recall-input');
+            if (!input || !input.value.trim()) { showToast('Type your answer.'); return; }
+            userAnswer = input.value.trim();
+            isCorrect = userAnswer.toLowerCase() === (ex.correct || '').toLowerCase();
+            showInlineFeedback(isCorrect, ex.correct, userAnswer, ex.meaning);
+
+        } else {
+            showToast('Press Continue to proceed.');
+            return;
+        }
+
+        isChecking = true;
+        totalAnswered++;
+
+        if (isCorrect) {
+            score++;
+            correctStreak++;
+            if (correctStreak > bestCombo) bestCombo = correctStreak;
+            xpEarned += ex.xp || 0;
+            updateXpCounter(ex.xp || 0);
+            spawnXpFloat(ex.xp || 0);
+            answeredWords[ex.word] = true;
+            showFlashFeedback(true);
+            showContinueButton(true);
+        } else {
+            correctStreak = 0;
+            showFlashFeedback(false);
+            showContinueButton(false);
+        }
+
+        trackWordProgress(ex.word, isCorrect, ex.stage);
+
+    } catch (err) {
+        console.error('checkAnswer error:', err);
+        showToast('Something went wrong. Please try again.');
+        isChecking = false;
     }
 }
 
-function showFeedback(isCorrect, correctAnswer, userAnswer) {
-    const container = document.getElementById('answer-area');
+/* ── Post-answer flow ─────────────────────────── */
+function showContinueButton(correct) {
+    const btn = $('check-btn');
+    if (correct) {
+        btn.textContent = '✓ Continue →';
+        btn.className = 'btn btn-success btn-lg';
+        btn.onclick = advanceAfterCorrect;
+    } else {
+        btn.textContent = 'Continue';
+        btn.className = 'btn btn-primary btn-lg';
+        btn.onclick = advanceAfterWrong;
+    }
+}
+
+function advanceAfterCorrect() {
+    nextExercise();
+}
+
+function advanceAfterWrong() {
+    // Duolingo-style: retry with a different exercise for the SAME word
+    const failedWord = currentExercise.word;
+    const retry = buildRetryExercise(failedWord);
+    if (retry) {
+        currentExercise = retry;
+        isChecking = false;
+        const container = $('exercise-content');
+        const answerArea = $('answer-area');
+        const actions = $('exercise-actions');
+        container.innerHTML = '';
+        answerArea.innerHTML = '';
+        actions.style.display = 'none';
+
+        // Show "Let's try again" banner
+        container.innerHTML = `<div class="retry-banner">💪 Let's try that again!</div>`;
+        container.style.animation = 'none';
+        void container.offsetWidth;
+        container.style.animation = 'fadeUp 0.35s ease';
+
+        // Render a text-input exercise for the same word
+        const mode = Math.random() > 0.5 ? 'translate' : 'recall';
+        const rm = (retry.meaning || '');
+        container.innerHTML += `
+            <div class="stage-recall">
+                ${mode === 'translate'
+                    ? `<div class="recall-prompt">Translate:</div>
+                       <div class="recall-word">${rm}</div>`
+                    : `<div class="recall-prompt">Type the word:</div>
+                       <div class="recall-word">${rm}</div>`
+                }
+            </div>
+        `;
+        answerArea.innerHTML = `
+            <input type="text" class="ex-input" id="retry-input" placeholder="Type your answer..." autofocus
+                onkeydown="if(event.key==='Enter')checkRetryAnswer()">
+        `;
+        actions.style.display = 'flex';
+
+        const btn = $('check-btn');
+        btn.textContent = 'Check';
+        btn.className = 'btn btn-primary btn-lg';
+        btn.onclick = checkRetryAnswer;
+
+        setTimeout(() => $('retry-input')?.focus(), 150);
+    } else {
+        // No retry available, just advance
+        nextExercise();
+    }
+}
+
+function checkRetryAnswer() {
+    try {
+        if (isChecking) return;
+        const input = $('retry-input');
+        if (!input || !input.value.trim()) { showToast('Type your answer.'); return; }
+
+        const userAnswer = input.value.trim();
+        const isCorrect = userAnswer.toLowerCase() === (currentExercise.correct || '').toLowerCase();
+
+        isChecking = true;
+        totalAnswered++;
+
+        if (isCorrect) {
+            score++;
+            xpEarned += 5;
+            updateXpCounter(5);
+            spawnXpFloat(5);
+            answeredWords[currentExercise.word] = true;
+            showFlashFeedback(true);
+            showInlineFeedback(true, currentExercise.correct, userAnswer, currentExercise.meaning);
+            trackWordProgress(currentExercise.word, true, 'retry');
+            showContinueButton(true);
+            $('check-btn').onclick = nextExercise;
+        } else {
+            showInlineFeedback(false, currentExercise.correct, userAnswer, currentExercise.meaning);
+            showToast(`Correct answer: "${currentExercise.correct}"`);
+            trackWordProgress(currentExercise.word, false, 'retry');
+            // Show Continue to move on
+            const btn = $('check-btn');
+            btn.textContent = 'Continue →';
+            btn.onclick = nextExercise;
+        }
+    } catch (err) {
+        console.error('checkRetryAnswer error:', err);
+        showToast('Something went wrong.');
+        isChecking = false;
+    }
+}
+
+function buildRetryExercise(word) {
+    // Find the same word in EXERCISES and build a simple retry
+    const orig = EXERCISES.find(e => e.word === word && e.stage !== 'summary');
+    if (!orig) return null;
+    return {
+        stage: 'retry',
+        word: orig.word,
+        meaning: orig.meaning,
+        language: orig.language,
+        correct: orig.correct || orig.word,
+        xp: 5,
+    };
+}
+
+function showInlineFeedback(correct, correctAnswer, userAnswer, meaning) {
+    const container = $('answer-area');
     const fb = document.createElement('div');
-    fb.className = `feedback-overlay ${isCorrect ? 'feedback-correct' : 'feedback-wrong'}`;
-    fb.innerHTML = isCorrect
-        ? `<div class="feedback-icon">✅</div><div class="feedback-text">Correct!</div>`
-        : `<div class="feedback-icon">❌</div><div class="feedback-text">"${userAnswer}" — correct: "${correctAnswer}"</div>`;
+    fb.className = `feedback-inline ${correct ? 'feedback-inline-correct' : 'feedback-inline-wrong'}`;
+    fb.innerHTML = correct
+        ? `<div class="feedback-icon-big">✅</div>
+           <div class="feedback-text-big">Correct!</div>
+           ${meaning ? `<div class="feedback-detail">${meaning}</div>` : ''}`
+        : `<div class="feedback-icon-big">❌</div>
+           <div class="feedback-text-big">Correct: "${correctAnswer || ''}"</div>
+           <div class="feedback-detail">${meaning || ''}</div>`;
     container.prepend(fb);
+}
+
+function showFlashFeedback(correct) {
+    const overlay = $('feedback-overlay');
+    overlay.style.display = 'flex';
+    overlay.innerHTML = correct
+        ? `<div class="feedback-flash feedback-flash-success">
+             <div class="feedback-flash-icon">✅</div>
+             <div class="feedback-flash-text">Good job!</div>
+           </div>`
+        : `<div class="feedback-flash feedback-flash-error">
+             <div class="feedback-flash-icon">💪</div>
+             <div class="feedback-flash-text">Keep trying!</div>
+           </div>`;
+    overlay.style.animation = 'none';
+    void overlay.offsetWidth;
+    overlay.style.animation = 'feedbackFlash 0.8s ease forwards';
+    setTimeout(() => { overlay.style.display = 'none'; }, 800);
 }
 
 function highlightOptions(correct, isCorrect) {
     document.querySelectorAll('.option-btn').forEach(btn => {
         btn.disabled = true;
-        if (btn.dataset.value.toLowerCase() === correct.toLowerCase()) {
+        if (btn.dataset.value.toLowerCase() === (correct || '').toLowerCase()) {
             btn.classList.add('correct');
         } else if (btn.classList.contains('selected') && !isCorrect) {
             btn.classList.add('wrong');
@@ -438,82 +709,176 @@ function highlightOptions(correct, isCorrect) {
     });
 }
 
-// ── Speech Recognition ─────────────────────────────────────────
 function startSpeechRecognition(expectedWord) {
+    // ── State machine: idle → listening → processing → correct|incorrect → completed ──
+    var speechState = 'idle';
+    var speechHandled = false;
+
+    var el = document.getElementById('speech-result');
+
+    // Remove any leftover skip/retry buttons from prior attempt
+    var oldSkip = el.parentNode && el.parentNode.querySelector('#speech-skip');
+    if (oldSkip) oldSkip.remove();
+
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        document.getElementById('speech-result').textContent = 'Speech recognition not available in this browser. Try Chrome or Edge.';
+        el.textContent = 'Speech recognition not available. Try Chrome.';
+        el.className = 'speech-result speech-error';
+        _showSpeechRetry();
         return;
     }
 
+    // Abort any previous session
+    if (window._speechRec) { try { window._speechRec.abort(); } catch(e) {} }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
-    recognition.lang = LANGUAGE === 'es' ? 'es-ES' : LANGUAGE === 'hi' ? 'hi-IN' : 'en-US';
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    window._speechRec = new SpeechRecognition();
+    window._speechRec.lang = LANG_CODES[LANGUAGE] || 'en-US';
+    window._speechRec.continuous = false;
+    window._speechRec.interimResults = false;
 
-    document.getElementById('speech-result').textContent = 'Listening...';
+    // Remove any leftover expected-pronunciation hint from prior attempt
+    var oldExpected = el.parentNode && el.parentNode.querySelector('.speech-expected');
+    if (oldExpected) oldExpected.remove();
 
-    recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript.toLowerCase().trim();
-        const expected = expectedWord.toLowerCase().trim();
+    // ── State: listening ──
+    speechState = 'listening';
+    el.textContent = '🎤 Listening...';
+    el.className = 'speech-result speech-listening';
 
-        // Check if expected word appears in transcript or vice versa
-        const isCorrect = transcript.includes(expected) || expected.includes(transcript);
+    // Fallback: if nothing happens within 8s, return to idle with retry
+    var speechTimer = setTimeout(function () {
+        if (speechHandled) return;
+        speechHandled = true;
+        speechState = 'completed';
+        try { window._speechRec.abort(); } catch(e) {}
+        el.textContent = '⏱ No speech detected. Try again.';
+        el.className = 'speech-result speech-error';
+        _showSpeechRetry();
+    }, 8000);
 
-        document.getElementById('speech-result').textContent = isCorrect
-            ? `✅ You said: "${transcript}" — Correct!`
-            : `❌ You said: "${transcript}" — Expected: "${expectedWord}"`;
+    function _showSpeechRetry() {
+        if (!currentExercise || currentExercise.stage !== 'speaking') return;
+        var btn = $('check-btn');
+        btn.textContent = '🔄 Try Again';
+        btn.className = 'btn btn-primary btn-lg';
+        btn.onclick = function () { startSpeechRecognition(expectedWord); };
+        $('exercise-actions').style.display = 'flex';
+        // Also add a Continue option so the user is never stuck
+        var skipEl = document.getElementById('speech-skip');
+        if (!skipEl) {
+            skipEl = document.createElement('div');
+            skipEl.id = 'speech-skip';
+            skipEl.style.marginTop = '12px';
+            skipEl.style.textAlign = 'center';
+            var elContainer = document.getElementById('speech-result').parentNode;
+            elContainer.appendChild(skipEl);
+        }
+        skipEl.innerHTML = '<button class="btn btn-ghost" onclick="nextExercise()" style="font-size:0.9rem;color:var(--text-3);text-decoration:underline;background:none;border:none;cursor:pointer;padding:8px 16px;">Skip →</button>';
+    }
 
-        if (isCorrect) {
+    function _showSpeechContinue() {
+        speechState = 'completed';
+        if (!currentExercise || currentExercise.stage !== 'speaking') return;
+        var btn = $('check-btn');
+        btn.textContent = 'Continue →';
+        btn.className = 'btn btn-primary btn-lg';
+        btn.onclick = nextExercise;
+        $('exercise-actions').style.display = 'flex';
+    }
+
+    window._speechRec.onresult = function (event) {
+        if (speechHandled) return;
+        clearTimeout(speechTimer);
+        speechHandled = true;
+
+        // ── State: processing ──
+        speechState = 'processing';
+
+        // Stop listening immediately once speech is detected
+        try { window._speechRec.stop(); } catch(e) {}
+
+        var transcript = event.results[0][0].transcript.toLowerCase().trim();
+        var expected = expectedWord.toLowerCase().trim();
+
+        // Similarity: check if transcript contains expected or vice versa, with fuzzy match
+        var similarity = transcript.includes(expected) || expected.includes(transcript);
+
+        if (similarity) {
+            // ── State: correct ──
+            speechState = 'correct';
             score++;
-            xpEarned += currentExercise.xp;
-            updateXpCounter(currentExercise.xp);
-            spawnXpFloat(currentExercise.xp);
-            trackWordProgress(expectedWord, true);
+            correctStreak++;
+            if (correctStreak > bestCombo) bestCombo = correctStreak;
+            xpEarned += currentExercise.xp || 0;
+            updateXpCounter(currentExercise.xp || 0);
+            spawnXpFloat(currentExercise.xp || 0);
+            trackWordProgress(expectedWord, true, 'speaking');
             totalAnswered++;
-            setTimeout(() => {
-                if (currentIndex + 1 < EXERCISES.length) {
-                    renderExercise(currentIndex + 1);
-                } else {
-                    showCompletion();
-                }
-            }, 1500);
+            el.textContent = '✅ "' + transcript + '" — Correct!';
+            el.className = 'speech-result speech-correct';
+            showFlashFeedback(true);
         } else {
+            // ── State: incorrect ──
+            speechState = 'incorrect';
             totalAnswered++;
-            trackWordProgress(expectedWord, false);
-            setTimeout(() => {
-                if (currentIndex + 1 < EXERCISES.length) {
-                    renderExercise(currentIndex + 1);
-                } else {
-                    showCompletion();
-                }
-            }, 2000);
+            correctStreak = 0;
+            trackWordProgress(expectedWord, false, 'speaking');
+            el.textContent = '❌ You said: "' + transcript + '"';
+            el.className = 'speech-result speech-wrong';
+            showFlashFeedback(false);
+            // Show expected pronunciation
+            var expectedDisplay = document.createElement('div');
+            expectedDisplay.className = 'speech-expected';
+            expectedDisplay.textContent = 'Expected: ' + expectedWord;
+            el.parentNode.appendChild(expectedDisplay);
+        }
+
+        // ── State: completed ──
+        _showSpeechContinue();
+    };
+
+    window._speechRec.onerror = function () {
+        if (speechHandled) return;
+        clearTimeout(speechTimer);
+        speechHandled = true;
+        speechState = 'completed';
+        el.textContent = '🎤 Tap & speak the word';
+        el.className = 'speech-result speech-error';
+        _showSpeechRetry();
+    };
+
+    window._speechRec.onend = function () {
+        clearTimeout(speechTimer);
+        // If neither onresult nor onerror handled it, the user never spoke — show retry
+        if (!speechHandled) {
+            speechHandled = true;
+            speechState = 'completed';
+            el.textContent = '⏱ No speech detected. Try again.';
+            el.className = 'speech-result speech-error';
+            _showSpeechRetry();
         }
     };
 
-    recognition.onerror = () => {
-        document.getElementById('speech-result').textContent = 'Could not hear clearly. Try again.';
-    };
-
-    recognition.start();
+    window._speechRec.start();
 }
 
-// ── AI Companion ───────────────────────────────────────────────
 function toggleAiPanel() {
     aiPanelOpen = !aiPanelOpen;
     document.getElementById('ai-panel').classList.toggle('collapsed', !aiPanelOpen);
-    document.getElementById('ai-toggle-icon').textContent = aiPanelOpen ? '▶' : '◀';
+    document.getElementById('ai-toggle-icon').textContent = aiPanelOpen ? '◀' : '▶';
 }
 
 async function aiQuickAction(action) {
     const word = currentExercise?.word || '';
     let message = '';
     switch (action) {
-        case 'explain': message = 'Explain this word to me.'; break;
-        case 'example': message = 'Give me an example sentence.'; break;
-        case 'encourage': message = 'Encourage me!'; break;
+        case 'explain': message = `Explain the word "${word}" in ${LANG_NAMES[LANGUAGE] || 'English'}.`; break;
+        case 'example': message = `Give me an example sentence using "${word}".`; break;
+        case 'encourage': message = 'Give me some motivation!'; break;
+        case 'translate': message = `Translate "${word}" and give me similar words.`; break;
     }
     addAiMessage(message, 'out');
+    setAiOrbState('thinking');
     try {
         const res = await fetch('/api/lesson/coach_message', {
             method: 'POST',
@@ -522,10 +887,11 @@ async function aiQuickAction(action) {
         });
         const data = await res.json();
         addAiMessage(data.message || 'Keep going!', 'in');
+        setAiOrbState('happy');
     } catch (e) {
-        addAiMessage('You\'re doing great! Keep practicing.', 'in');
+        addAiMessage("You're doing great! Keep practicing.", 'in');
+        setAiOrbState('happy');
     }
-    setAiOrbState('happy');
 }
 
 async function aiSendMessage() {
@@ -534,6 +900,7 @@ async function aiSendMessage() {
     if (!text) return;
     input.value = '';
     addAiMessage(text, 'out');
+    setAiOrbState('thinking');
     try {
         const res = await fetch('/api/lesson/coach_message', {
             method: 'POST',
@@ -542,8 +909,10 @@ async function aiSendMessage() {
         });
         const data = await res.json();
         addAiMessage(data.message || 'Great question! Keep learning.', 'in');
+        setAiOrbState('happy');
     } catch (e) {
-        addAiMessage('You\'re making progress every day!', 'in');
+        addAiMessage("You're making progress every day!", 'in');
+        setAiOrbState('happy');
     }
 }
 
@@ -565,7 +934,6 @@ function setAiOrbState(state) {
     else if (state === 'thinking') orb.classList.add('ai-orb-thinking');
 }
 
-// ── Progress & UI Updates ─────────────────────────────────────
 function updateProgress(index) {
     const pct = EXERCISES.length > 0 ? (index / EXERCISES.length * 100) : 0;
     document.getElementById('progress-fill').style.width = `${pct}%`;
@@ -592,24 +960,32 @@ function spawnXpFloat(xp) {
 }
 
 function speakWord(word, lang) {
+    if (!word) return;
     const utterance = new SpeechSynthesisUtterance(word);
-    utterance.lang = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : lang === 'hi' ? 'hi-IN' : 'en-US';
-    utterance.rate = 0.9;
-    speechSynthesis.cancel();
-    speechSynthesis.speak(utterance);
+    utterance.lang = LANG_CODES[lang] || 'en-US';
+    utterance.rate = 0.85;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
 }
 
 function showToast(msg) {
-    const container = document.getElementById('toast-container') || document.body;
-    const el = document.createElement('div');
-    el.className = 'toast-notification';
+    let el = document.querySelector('.toast-custom');
+    if (el) el.remove();
+    el = document.createElement('div');
+    el.className = 'toast-custom';
     el.textContent = msg;
-    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 20px;z-index:1000;animation:fadeUp 0.3s ease;font-size:0.9rem;';
-    container.appendChild(el);
-    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 2500);
+    document.body.appendChild(el);
+    requestAnimationFrame(() => {
+        el.style.opacity = '1';
+        el.style.transform = 'translateX(-50%) translateY(0)';
+    });
+    setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(-50%) translateY(10px)';
+        setTimeout(() => el.remove(), 400);
+    }, 2000);
 }
 
-// ── Completion ─────────────────────────────────────────────────
 function showCompletion() {
     document.getElementById('exercise-card').style.display = 'none';
     document.getElementById('completion-screen').style.display = 'block';
@@ -617,24 +993,72 @@ function showCompletion() {
     document.getElementById('progress-text').textContent = `${EXERCISES.length} / ${EXERCISES.length}`;
 
     const accuracy = totalAnswered > 0 ? Math.round(score / totalAnswered * 100) : 0;
-    document.getElementById('completion-score').textContent = `${accuracy}%`;
+    document.getElementById('completion-accuracy').textContent = `${accuracy}%`;
     document.getElementById('completion-xp').textContent = `+${xpEarned}`;
 
-    // Show word chips
-    const words = [...new Set(wordProgress.map(w => w.word))];
-    document.getElementById('completion-words').innerHTML = words.map(w => {
+    const uniqueWords = [...new Set(wordProgress.map(w => w.word))].filter(Boolean);
+    const newWords = nonSummaryExercises.filter(e => e.word_type === 'new');
+    const newWordSet = new Set(newWords.map(e => e.word));
+    const reviewWordSet = new Set(nonSummaryExercises.filter(e => e.word_type === 'review').map(e => e.word));
+    const newLearned = [...newWordSet].filter(w => uniqueWords.includes(w));
+    const reviewed = [...reviewWordSet].filter(w => uniqueWords.includes(w));
+    document.getElementById('completion-words-learned').textContent = newLearned.length;
+    document.getElementById('completion-words-reviewed').textContent = reviewed.length;
+
+    const speakingStats = stageStats['speaking'] || {correct: 0, total: 0};
+    const listeningStats = stageStats['listening'] || {correct: 0, total: 0};
+    document.getElementById('completion-speaking').textContent = speakingStats.total > 0
+        ? `${Math.round(speakingStats.correct / speakingStats.total * 100)}%` : '—';
+    document.getElementById('completion-listening').textContent = listeningStats.total > 0
+        ? `${Math.round(listeningStats.correct / listeningStats.total * 100)}%` : '—';
+
+    document.getElementById('completion-streak').textContent = `{{ lesson_data.streak_days or 0 }}`;
+
+    if (bestCombo > 1) {
+        const comboCard = document.getElementById('completion-streak-card');
+        comboCard.style.display = 'block';
+        document.getElementById('completion-combo').textContent = bestCombo;
+    }
+
+    const allWordsHtml = uniqueWords.map(w => {
         const wp = wordProgress.find(p => p.word === w);
         const emoji = wp && wp.correct ? '✅' : '🔄';
         return `<span class="word-chip">${emoji} ${w}</span>`;
-    }).join('').replace(/,/g, '');
+    }).join('');
+    document.getElementById('completion-new-words-list').innerHTML = allWordsHtml
+        ? `<div class="completion-words-section"><div class="csc-label" style="margin-bottom:8px;">Words practiced</div><div class="completion-chips">${allWordsHtml}</div></div>`
+        : '—';
 
-    // Save to server
+    let message = '';
+    if (accuracy >= 90) message = "🌟 Outstanding! You're on fire!";
+    else if (accuracy >= 75) message = "👏 Great job! Keep that momentum!";
+    else if (accuracy >= 50) message = "💪 Good effort! Review and try again!";
+    else message = "🌱 Every mistake is a step forward. Keep going!";
+    document.getElementById('completion-message').textContent = message;
+
+    // Animate XP counter
+    animateValue('completion-xp', 0, xpEarned, 800);
+
     saveLessonProgress(accuracy);
+}
+
+function animateValue(elementId, start, end, duration) {
+    const el = document.getElementById(elementId);
+    const range = end - start;
+    const startTime = performance.now();
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        el.textContent = `+${Math.round(start + range * eased)}`;
+        if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
 }
 
 async function saveLessonProgress(accuracy) {
     try {
-        await fetch('/api/lesson/complete', {
+        const res = await fetch('/api/lesson/complete', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
@@ -643,23 +1067,27 @@ async function saveLessonProgress(accuracy) {
                 score: score,
                 total: totalAnswered,
                 xp_earned: xpEarned,
-                word_progress: wordProgress
+                word_progress: wordProgress,
+                stage_stats: stageStats,
+                duration_seconds: Math.round((Date.now() - exerciseStartTime) / 1000)
             })
         });
+        const data = await res.json();
+        if (data.new_achievements && data.new_achievements.length > 0) {
+            data.new_achievements.forEach(a => {
+                showToast(`🏆 ${a.icon || '🏆'} ${a.name}: ${a.description}`);
+            });
+        }
     } catch (e) {
         console.error('Save error:', e);
     }
 }
 
-// ── Keyboard shortcut ─────────────────────────────────────────
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') toggleAiPanel();
+    if (e.key === 'Enter' && isChecking && document.getElementById('check-btn').textContent.includes('Continue')) {
+        document.getElementById('check-btn').click();
+    }
 });
-
-// ── Mobile sidebar close ──────────────────────────────────────
-function closeSidebar() {
-    document.getElementById('app-sidebar').classList.remove('open');
-    document.getElementById('sidebar-overlay').style.display = 'none';
-}
 </script>
 {% endblock %}

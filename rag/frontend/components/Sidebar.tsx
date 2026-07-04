@@ -41,7 +41,7 @@ export function Sidebar() {
       )}
 
       <div className="mt-auto text-xs text-muted-foreground">
-        <p>SQL Lecture Assistant</p>
+        <p>AI SQL Teacher</p>
         <p>v2.0.0</p>
       </div>
     </div>

@@ -844,7 +844,12 @@ class VocabularyEngine:
                 except Exception:
                     pass
                 if not rw_meaning or is_placeholder(rw_meaning):
-                    rw_meaning = f'A word related to "{word}"'
+                    from dictionary_service import dictionary_service
+                    defn = dictionary_service.get_meaning(rw_word, language)
+                    if defn:
+                        rw_meaning = defn["meaning"]
+                    else:
+                        rw_meaning = ""
 
             # See if word already exists for user
             conn = db.get_connection()

@@ -6,6 +6,22 @@ export interface Source {
   rank: number;
 }
 
+export interface MicroExercise {
+  type: string;
+  question: string;
+  answer?: string;
+  hint?: string;
+}
+
+export interface TeachingState {
+  concept: string;
+  difficulty: string;
+  lesson_progress: string[];
+  struggled_concepts: string[];
+  examples_used: string[];
+  pedagogical_goal: string;
+}
+
 export interface AnswerResponse {
   question: string;
   answer: string;
@@ -14,6 +30,12 @@ export interface AnswerResponse {
   retrieval_time_ms: number;
   llm_time_ms: number;
   total_time_ms: number;
+  teacher_action: string;
+  teaching_state: TeachingState | null;
+  student_prompt: string | null;
+  student_prompt_type: string | null;
+  micro_exercise: MicroExercise | null;
+  session_id: string | null;
 }
 
 export interface HealthResponse {
@@ -25,44 +47,45 @@ export interface HealthResponse {
   embeddings_loaded: boolean;
 }
 
-export async function askQuestion(question: string): Promise<AnswerResponse> {
+export async function askQuestion(
+  question: string,
+  sessionId?: string | null,
+  teachingState?: TeachingState | null,
+): Promise<AnswerResponse> {
   const url = `${API_BASE}/ask`;
-  const payload = { question };
-  console.log("Request URL:", url);
-  console.log("Request Payload:", JSON.stringify(payload));
+  const payload: Record<string, unknown> = { question };
+  if (sessionId) payload.session_id = sessionId;
+  if (teachingState) payload.teaching_state = teachingState;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  console.log("Response status:", res.status, res.statusText);
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    console.log("Response error:", err);
     throw new Error(err.detail || "Failed to get answer");
   }
-  const data = await res.json();
-  console.log("Response data:", data);
-  return data;
+  return res.json();
 }
 
 export async function askQuestionStream(
   question: string,
   onChunk: (text: string) => void,
-  onSources?: (sources: Source[]) => void,
+  onMeta?: (meta: Record<string, unknown>) => void,
   onError?: (error: Error) => void,
+  sessionId?: string | null,
+  teachingState?: TeachingState | null,
 ): Promise<void> {
   try {
     const url = `${API_BASE}/ask/stream`;
-    const payload = { question };
-    console.log("Stream Request URL:", url);
-    console.log("Stream Request Payload:", JSON.stringify(payload));
+    const payload: Record<string, unknown> = { question };
+    if (sessionId) payload.session_id = sessionId;
+    if (teachingState) payload.teaching_state = teachingState;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    console.log("Stream Response status:", res.status, res.statusText);
     if (!res.ok) throw new Error("Stream request failed");
 
     const reader = res.body?.getReader();
@@ -76,13 +99,13 @@ export async function askQuestionStream(
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
 
-      const sourcesIdx = buffer.indexOf("__SOURCES__:");
-      if (sourcesIdx !== -1) {
-        onChunk(buffer.slice(0, sourcesIdx));
-        const sourcesJson = buffer.slice(sourcesIdx + "__SOURCES__:".length);
+      const metaIdx = buffer.indexOf("__META__:");
+      if (metaIdx !== -1) {
+        onChunk(buffer.slice(0, metaIdx));
+        const metaJson = buffer.slice(metaIdx + "__META__:".length);
         try {
-          const parsed = JSON.parse(sourcesJson);
-          onSources?.(parsed);
+          const parsed = JSON.parse(metaJson);
+          onMeta?.(parsed);
         } catch {
           // ignore parse errors
         }
@@ -99,14 +122,11 @@ export async function askQuestionStream(
 export async function speakText(text: string): Promise<Blob> {
   const url = `${API_BASE}/speak`;
   const payload = { text };
-  console.log("TTS Request URL:", url);
-  console.log("TTS Request Payload:", JSON.stringify(payload));
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  console.log("TTS Response status:", res.status, res.statusText);
   if (!res.ok) {
     let detail = "TTS failed";
     try { const err = await res.json(); detail = err.detail || detail; } catch {}
@@ -117,9 +137,7 @@ export async function speakText(text: string): Promise<Blob> {
 
 export async function checkHealth(): Promise<HealthResponse> {
   const url = `${API_BASE}/health`;
-  console.log("Health Request URL:", url);
   const res = await fetch(url);
-  console.log("Health Response status:", res.status, res.statusText);
   if (!res.ok) throw new Error("Health check failed");
   return res.json();
 }

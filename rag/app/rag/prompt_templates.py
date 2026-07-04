@@ -1,22 +1,53 @@
-def get_rag_prompt(question: str, context: str) -> str:
-    return f"""You are a SQL lecture assistant for a training course.
+def get_teacher_prompt(
+    question: str,
+    context: str,
+    history: list | None = None,
+    teaching_state: dict | None = None,
+) -> str:
+    history_block = _build_history_block(history)
+    state_block = _build_state_block(teaching_state)
+    return f"""You are a SQL teacher for beginners.
 
-STRICT RULES:
-1. Answer ONLY from the provided lecture context below.
-2. Do NOT use any outside knowledge or training data.
-3. If the answer is not explicitly present in the context, respond exactly:
-   "I could not find that information in the lectures."
-4. Keep answers concise and educational.
-5. When relevant, include specific SQL examples from the context.
-6. Cite the source filename when referencing specific content.
+{history_block}{state_block}Student: {question}
 
-Context:
+Facts:
 {context}
 
-Question:
-{question}
+Explain with an analogy, a real SQL statement like CREATE TABLE, and end with a question.
+Teacher:"""
 
-Answer:"""
+
+def _build_history_block(history: list | None) -> str:
+    if not history:
+        return ""
+    lines = []
+    for m in history[-4:]:
+        role = m.get("role", "user").capitalize()
+        content = m.get("content", "")
+        if len(content) > 150:
+            content = content[:150] + "..."
+        lines.append(f"{role}: {content}")
+    return "Recent conversation:\n" + "\n".join(lines) + "\n\n"
+
+
+def _build_state_block(state: dict | None) -> str:
+    if not state:
+        return ""
+    concept = (state.get("concept") or "").strip()
+    if not concept:
+        return ""
+    parts = [f"Teaching topic: {concept}"]
+    difficulty = state.get("difficulty", "beginner")
+    parts.append(f"Level: {difficulty}")
+    if state.get("lesson_progress"):
+        parts.append("Covered: " + ", ".join(state["lesson_progress"][-3:]))
+    if state.get("struggled_concepts"):
+        parts.append("Struggled: " + ", ".join(state["struggled_concepts"][-2:]))
+    return "Background:\n" + "\n".join(parts) + "\n\n"
+
+
+def get_rag_prompt(question: str, context: str, history: list | None = None) -> str:
+    return get_teacher_prompt(question=question, context=context, history=history)
 
 
 def get_compression_prompt(question: str, passage: str) -> str:
@@ -28,40 +59,3 @@ Passage:
 {passage}
 
 Relevant excerpt:"""
-
-
-NOISE_PATTERNS = [
-    "Microsoft Teams",
-    "Recorded by",
-    "Organized by",
-    "Gaurav Mehta",
-    "Ask Copilot",
-    "Chat",
-    "Type a message",
-    "ENG",
-    "IN",
-    "Partly sunny",
-    "Sunny",
-    "High UV",
-    "Very high UV",
-    "C/Users/Gaurav/",
-    "AppData/Local/Microsoft/Windows/INetCache/",
-    "Content.Outlook",
-    "SQL DAY 1pdf",
-    "@File",
-    "OFile",
-    "Breaking news",
-    "Select Repository",
-    "Ready",
-    "No issues found",
-    "Command Prompt",
-    "Microsoft Windows [Version",
-    "All rights reserved",
-    "Try the new Outlook",
-    "Object Explorer",
-    "TABS",
-    "CRLF",
-    "UTF-8",
-    "Connected.",
-    "(local)",
-]

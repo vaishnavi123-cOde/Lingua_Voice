@@ -2,22 +2,21 @@
 
 {% block title %}SQL Training — LinguaVoice{% endblock %}
 {% block page_title %}SQL Training 🗃️{% endblock %}
-{% block page_subtitle %}Ask SQL questions with your voice — powered by AI{% endblock %}
+{% block page_subtitle %}Your personal SQL tutor — ask anything, learn by voice{% endblock %}
 
 {% block extra_css %}
 <style>
 /* ── SQL Training Page Scoped Styles ──────────────────── */
 .sql-hero {
     text-align: center;
-    padding: 2rem 1rem 1.5rem;
-    margin-bottom: 1.5rem;
+    padding: 1.5rem 1rem 0.5rem;
 }
 
 .sql-hero-title {
     font-size: 1.6rem;
     font-weight: 800;
     letter-spacing: -0.5px;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     background: linear-gradient(135deg, #ffa500, #ffcc44);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -25,7 +24,7 @@
 }
 
 .sql-hero-sub {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: var(--text-2);
     max-width: 520px;
     margin: 0 auto;
@@ -37,24 +36,23 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.25rem;
-    margin-bottom: 2rem;
+    gap: 0.5rem;
+    margin: 1rem 0;
 }
 
 .sql-mic-btn {
-    width: 96px;
-    height: 96px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     border: 2px solid rgba(255, 165, 0, 0.25);
     background: var(--surface);
     color: var(--accent);
-    font-size: 2.4rem;
+    font-size: 2rem;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s var(--ease);
-    position: relative;
     box-shadow: 0 0 0 0 rgba(255, 165, 0, 0);
 }
 
@@ -79,268 +77,218 @@
 }
 
 .sql-mic-label {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: var(--text-3);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
 }
 
-.sql-mic-status {
+/* ── Conversation Status Bar ──────────────────────────── */
+.sql-status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 2.4rem;
+    padding: 0.4rem 1rem;
+    margin-bottom: 0.75rem;
     font-size: 0.82rem;
     color: var(--text-2);
-    min-height: 1.2em;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
 }
 
-.sql-mic-status.error {
-    color: #fca5a5;
+.sql-status-bar.listening {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.05);
+    color: #ef4444;
 }
 
-/* ── Transcript Area ──────────────────────────────────── */
-.sql-transcript-card {
+.sql-status-bar.thinking {
+    border-color: #ffa500;
+    background: rgba(255, 165, 0, 0.05);
+    color: var(--accent);
+}
+
+.sql-status-bar.speaking {
+    border-color: #34d399;
+    background: rgba(16, 185, 129, 0.05);
+    color: #34d399;
+}
+
+.sql-status-bar.ready {
+    border-color: var(--border-strong);
+    color: var(--text-3);
+}
+
+.sql-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+}
+
+.sql-status-bar.listening .sql-status-dot {
+    animation: statusPulse 1s ease-in-out infinite;
+}
+
+.sql-status-bar.thinking .sql-status-dot {
+    animation: statusPulse 0.6s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(0.7); }
+}
+
+.sql-status-text {
+    font-weight: 500;
+}
+
+/* ── Transcript / Input ───────────────────────────────── */
+.sql-input-area {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.sql-transcript-box {
+    flex: 1;
+    min-height: 48px;
+    max-height: 120px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+    color: var(--text-1);
+    font-size: 0.9rem;
+    font-family: var(--font);
+    line-height: 1.6;
+    padding: 0.75rem 1rem;
+    resize: none;
     transition: border-color 0.2s;
 }
 
-.sql-transcript-card:focus-within {
+.sql-transcript-box:focus {
+    outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(255, 165, 0, 0.1);
 }
 
-.sql-transcript-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-}
-
-.sql-transcript-label {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--accent);
-}
-
-.sql-transcript-clear {
-    font-size: 0.75rem;
-    color: var(--text-3);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.3rem 0.6rem;
-    border-radius: 8px;
-    transition: all 0.18s;
-}
-
-.sql-transcript-clear:hover {
-    background: var(--surface2);
-    color: var(--text-1);
-}
-
-#sql-transcript-box {
-    width: 100%;
-    min-height: 80px;
-    background: transparent;
-    border: none;
-    color: var(--text-1);
-    font-size: 1rem;
-    font-family: var(--font);
-    line-height: 1.7;
-    resize: vertical;
-    padding: 0;
-}
-
-#sql-transcript-box::placeholder {
+.sql-transcript-box::placeholder {
     color: var(--text-3);
 }
 
-#sql-transcript-box:focus {
-    outline: none;
-    box-shadow: none;
-    border: none;
-}
-
-/* ── Action Buttons ───────────────────────────────────── */
-.sql-actions {
-    display: flex;
-    gap: 0.75rem;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-}
-
-.sql-ask-btn {
-    flex: 1;
-    min-width: 180px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 0.85rem 1.5rem;
+.sql-send-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
     background: linear-gradient(135deg, #ffa500, #e08000);
     color: #000;
     border: none;
-    border-radius: var(--radius);
-    font-size: 0.95rem;
-    font-weight: 700;
-    font-family: var(--font);
+    font-size: 1.2rem;
     cursor: pointer;
-    transition: all 0.25s var(--ease);
-    box-shadow: 0 4px 20px rgba(255, 165, 0, 0.25);
+    transition: all 0.2s var(--ease);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(255, 165, 0, 0.2);
 }
 
-.sql-ask-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(255, 165, 0, 0.4);
-    background: linear-gradient(135deg, #ffb830, #ffa500);
+.sql-send-btn:hover:not(:disabled) {
+    transform: scale(1.08);
+    box-shadow: 0 6px 24px rgba(255, 165, 0, 0.35);
 }
 
-.sql-ask-btn:disabled {
-    opacity: 0.4;
+.sql-send-btn:disabled {
+    opacity: 0.35;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }
 
-.sql-speak-btn {
+/* ── Conversation Messages ────────────────────────────── */
+.sql-conversation {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 0.85rem 1.5rem;
-    background: var(--surface);
-    color: var(--text-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    font-size: 0.9rem;
-    font-weight: 600;
-    font-family: var(--font);
-    cursor: pointer;
-    transition: all 0.2s var(--ease);
-}
-
-.sql-speak-btn:hover:not(:disabled) {
-    background: var(--surface2);
-    color: var(--text-1);
-    border-color: var(--border-strong);
-    transform: translateY(-1px);
-}
-
-.sql-speak-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-}
-
-/* ── Loading Spinner ──────────────────────────────────── */
-.sql-loading {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    padding: 2rem;
-    color: var(--text-2);
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.sql-loading.visible {
-    display: flex;
-}
-
-.sql-spinner {
-    width: 24px;
-    height: 24px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: sqlSpin 0.8s linear infinite;
-}
-
-@keyframes sqlSpin {
-    to { transform: rotate(360deg); }
-}
-
-/* ── Answer Card ──────────────────────────────────────── */
-.sql-answer-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    margin-bottom: 1.5rem;
-    display: none;
-    animation: fadeUp 0.4s ease both;
-}
-
-.sql-answer-card.visible {
-    display: block;
-}
-
-.sql-answer-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--border);
-    background: rgba(255, 165, 0, 0.03);
-}
-
-.sql-answer-avatar {
-    width: 40px;
-    height: 40px;
-    background: var(--accent-dim);
-    border: 1px solid rgba(255, 165, 0, 0.2);
-    border-radius: var(--radius);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    flex-shrink: 0;
-}
-
-.sql-answer-meta {
-    flex: 1;
-}
-
-.sql-answer-from {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--text-1);
-}
-
-.sql-answer-time {
-    font-size: 0.72rem;
-    color: var(--text-3);
-    margin-top: 2px;
-}
-
-.sql-answer-body {
-    padding: 1.5rem;
-}
-
-.sql-question-echo {
-    font-size: 0.82rem;
-    color: var(--text-3);
+    flex-direction: column;
+    gap: 1rem;
     margin-bottom: 1rem;
-    padding: 0.75rem 1rem;
-    background: rgba(255, 255, 255, 0.02);
-    border-left: 3px solid var(--accent);
-    border-radius: 0 8px 8px 0;
-    font-style: italic;
+    max-height: 50vh;
+    overflow-y: auto;
+    padding-right: 4px;
 }
 
-#sql-answer-text {
-    font-size: 0.95rem;
-    line-height: 1.8;
-    color: var(--text-1);
+.sql-conversation::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sql-conversation::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+.sql-msg {
+    display: flex;
+    gap: 0.75rem;
+    animation: fadeUp 0.3s ease both;
+}
+
+.sql-msg-user {
+    flex-direction: row-reverse;
+}
+
+.sql-msg-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.sql-msg-user .sql-msg-avatar {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid rgba(255, 165, 0, 0.2);
+}
+
+.sql-msg-tutor .sql-msg-avatar {
+    background: rgba(16, 185, 129, 0.1);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.sql-msg-bubble {
+    max-width: 80%;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-lg);
+    font-size: 0.9rem;
+    line-height: 1.7;
     white-space: pre-wrap;
     word-break: break-word;
 }
 
-#sql-answer-text code {
+.sql-msg-user .sql-msg-bubble {
+    background: rgba(255, 165, 0, 0.08);
+    border: 1px solid rgba(255, 165, 0, 0.15);
+    color: var(--text-1);
+    border-bottom-right-radius: 4px;
+}
+
+.sql-msg-tutor .sql-msg-bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-1);
+    border-bottom-left-radius: 4px;
+}
+
+.sql-msg-bubble code {
     background: rgba(255, 165, 0, 0.08);
     border: 1px solid rgba(255, 165, 0, 0.15);
     padding: 0.15em 0.45em;
@@ -350,97 +298,123 @@
     font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
 }
 
-#sql-answer-text pre {
+.sql-msg-bubble pre {
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 1rem 1.25rem;
-    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    margin: 0.75rem 0;
     overflow-x: auto;
-    font-size: 0.85rem;
-    line-height: 1.6;
+    font-size: 0.82rem;
+    line-height: 1.5;
     color: #e2e8f0;
 }
 
-/* ── Sources Section ──────────────────────────────────── */
-.sql-sources {
-    border-top: 1px solid var(--border);
-    padding: 1.25rem 1.5rem;
-    display: none;
-}
-
-.sql-sources.visible {
-    display: block;
-}
-
-.sql-sources-title {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+.sql-msg-time {
+    font-size: 0.7rem;
     color: var(--text-3);
-    margin-bottom: 0.75rem;
+    margin-top: 4px;
 }
 
-.sql-source-list {
+.sql-msg-user .sql-msg-time {
+    text-align: right;
+}
+
+/* ── Follow-up suggestions ────────────────────────────── */
+.sql-followups {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.sql-source-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.82rem;
-    color: var(--text-2);
-    padding: 0.5rem 0.75rem;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.sql-source-icon {
-    font-size: 0.75rem;
-    color: var(--accent);
-    flex-shrink: 0;
-}
-
-/* ── Audio Player ─────────────────────────────────────── */
-.sql-audio-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1.25rem 1.5rem;
-    display: none;
-    margin-bottom: 1.5rem;
-}
-
-.sql-audio-section.visible {
-    display: block;
-    animation: fadeUp 0.3s ease both;
-}
-
-.sql-audio-header {
-    display: flex;
-    align-items: center;
+    flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 0.75rem;
+    margin: 0.5rem 0 0.75rem;
 }
 
-.sql-audio-label {
+.sql-followup-chip {
+    padding: 0.4rem 0.85rem;
+    background: rgba(255, 165, 0, 0.06);
+    border: 1px solid rgba(255, 165, 0, 0.15);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.2s;
+    line-height: 1.4;
+}
+
+.sql-followup-chip:hover {
+    background: rgba(255, 165, 0, 0.12);
+    border-color: rgba(255, 165, 0, 0.3);
+    transform: translateY(-1px);
+}
+
+/* ── Sources Section ──────────────────────────────────── */
+.sql-msg-sources {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.sql-msg-sources-toggle {
     font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
     color: var(--text-3);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0.25rem 0;
+    font-family: var(--font);
 }
 
-#sql-audio-player {
-    width: 100%;
-    height: 40px;
-    border-radius: 10px;
-    outline: none;
+.sql-msg-sources-toggle:hover {
+    color: var(--accent);
+}
+
+.sql-msg-sources-list {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 0.4rem;
+}
+
+.sql-msg-sources-list.visible {
+    display: flex;
+}
+
+.sql-msg-source-item {
+    font-size: 0.78rem;
+    color: var(--text-3);
+    padding: 0.3rem 0.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 6px;
+}
+
+/* ── Speaking indicator in message ────────────────────── */
+.sql-msg-speaking {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: #34d399;
+    margin-top: 4px;
+}
+
+.sql-msg-speaking .bar {
+    width: 3px;
+    height: 12px;
+    background: #34d399;
+    border-radius: 2px;
+    animation: speakBar 0.6s ease-in-out infinite alternate;
+}
+
+.sql-msg-speaking .bar:nth-child(2) { animation-delay: 0.2s; }
+.sql-msg-speaking .bar:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes speakBar {
+    0% { height: 4px; }
+    100% { height: 14px; }
+}
+
+/* ── Audio Player (hidden) ────────────────────────────── */
+.sql-audio-hidden {
+    display: none;
 }
 
 /* ── Error Alert ──────────────────────────────────────── */
@@ -448,11 +422,11 @@
     background: rgba(239, 68, 68, 0.08);
     border: 1px solid rgba(239, 68, 68, 0.2);
     border-radius: var(--radius);
-    padding: 0.85rem 1.15rem;
+    padding: 0.75rem 1rem;
     color: #fca5a5;
     font-size: 0.85rem;
     font-weight: 500;
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.75rem;
     display: none;
     align-items: center;
     gap: 0.5rem;
@@ -462,39 +436,84 @@
     display: flex;
 }
 
-/* ── Chat History ─────────────────────────────────────── */
-.sql-history-divider {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin: 2rem 0 1.5rem;
+/* ── Empty state ──────────────────────────────────────── */
+.sql-empty {
+    text-align: center;
+    padding: 2.5rem 1rem;
     color: var(--text-3);
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
 }
 
-.sql-history-divider::before,
-.sql-history-divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
+.sql-empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.sql-empty-text {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+/* ── Hands-free toggle ────────────────────────────────── */
+.sql-handsfree {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--text-3);
+}
+
+.sql-handsfree input {
+    accent-color: var(--accent);
+}
+
+/* ── Typing indicator ─────────────────────────────────── */
+.sql-typing {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    animation: fadeUp 0.3s ease both;
+}
+
+.sql-typing-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.sql-typing-dots span {
+    width: 6px;
+    height: 6px;
+    background: var(--text-3);
+    border-radius: 50%;
+    animation: typingDot 1.2s ease-in-out infinite;
+}
+
+.sql-typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.sql-typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingDot {
+    0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-4px); }
+}
+
+.sql-typing-text {
+    font-size: 0.82rem;
+    color: var(--text-3);
 }
 
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 640px) {
     .sql-mic-btn {
-        width: 80px;
-        height: 80px;
-        font-size: 2rem;
+        width: 64px;
+        height: 64px;
+        font-size: 1.6rem;
     }
-    .sql-actions {
-        flex-direction: column;
-    }
-    .sql-ask-btn, .sql-speak-btn {
-        width: 100%;
+    .sql-msg-bubble {
+        max-width: 90%;
     }
 }
 </style>
@@ -504,12 +523,9 @@
 
 <!-- Hero -->
 <div class="sql-hero fade-up-1">
-    <div class="sql-hero-title">Voice-Powered SQL Assistant</div>
+    <div class="sql-hero-title">Your SQL Tutor</div>
     <div class="sql-hero-sub">
-        Tap the microphone, ask your SQL question by voice, and get an instant AI-powered answer with sources.
-    </div>
-    <div id="sql-browser-warn" style="display:none;margin-top:0.75rem;padding:0.5rem 1rem;background:rgba(255,165,0,0.1);border:1px solid rgba(255,165,0,0.2);border-radius:10px;font-size:0.8rem;color:var(--text-2);">
-        &#9888; Speech recognition requires <strong>Chrome</strong> or <strong>Edge</strong>. You can still type your question manually.
+        Speak or type your SQL question, and I'll teach you like a personal instructor.
     </div>
 </div>
 
@@ -519,70 +535,61 @@
     <span id="sql-error-text"></span>
 </div>
 
+<!-- Status Bar -->
+<div class="sql-status-bar ready" id="sql-status-bar">
+    <span class="sql-status-dot"></span>
+    <span class="sql-status-text" id="sql-status-text">Ready for your question</span>
+</div>
+
 <!-- Microphone -->
 <div class="sql-mic-section fade-up-2">
-    <button class="sql-mic-btn" id="sql-mic-btn" onclick="toggleRecording()" title="Click to start voice input">
+    <button class="sql-mic-btn" id="sql-mic-btn" onclick="toggleRecording()" title="Click to speak your question">
         🎤
     </button>
     <div class="sql-mic-label" id="sql-mic-label">Tap to speak</div>
-    <div class="sql-mic-status" id="sql-mic-status"></div>
 </div>
 
-<!-- Transcript -->
-<div class="sql-transcript-card fade-up-3">
-    <div class="sql-transcript-header">
-        <span class="sql-transcript-label">Your Question</span>
-        <button class="sql-transcript-clear" onclick="clearTranscript()" title="Clear">✕ Clear</button>
-    </div>
-    <textarea id="sql-transcript-box" placeholder="Your voice transcript will appear here… or type a question manually." rows="3"></textarea>
-</div>
-
-<!-- Actions -->
-<div class="sql-actions fade-up-3">
-    <button class="sql-ask-btn" id="sql-ask-btn" onclick="askSqlAssistant()" disabled>
-        <span>🚀</span> Ask SQL Assistant
-    </button>
-    <button class="sql-speak-btn" id="sql-speak-btn" onclick="speakAnswer()" disabled title="Play answer as audio">
-        🔊 Play Answer
-    </button>
-</div>
-
-<!-- Loading -->
-<div class="sql-loading" id="sql-loading">
-    <div class="sql-spinner"></div>
-    <span id="sql-loading-text">Thinking\u2026</span>
-</div>
-
-<!-- Answer Card -->
-<div class="sql-answer-card" id="sql-answer-card">
-    <div class="sql-answer-header">
-        <div class="sql-answer-avatar">🤖</div>
-        <div class="sql-answer-meta">
-            <div class="sql-answer-from">SQL Assistant</div>
-            <div class="sql-answer-time" id="sql-answer-time"></div>
+<!-- Conversation Area -->
+<div class="sql-conversation" id="sql-conversation">
+    <div class="sql-empty" id="sql-empty">
+        <div class="sql-empty-icon">🎓</div>
+        <div class="sql-empty-text">
+            Ask me anything about SQL —<br>
+            Try <em>"What is a primary key?"</em> or <em>"Explain JOINs"</em>
         </div>
     </div>
-    <div class="sql-answer-body">
-        <div class="sql-question-echo" id="sql-question-echo"></div>
-        <div id="sql-answer-text"></div>
-    </div>
-    <div class="sql-sources" id="sql-sources">
-        <div class="sql-sources-title">📎 Sources</div>
-        <div class="sql-source-list" id="sql-source-list"></div>
-    </div>
 </div>
 
-<!-- Audio Player -->
-<div class="sql-audio-section" id="sql-audio-section">
-    <div class="sql-audio-header">
-        <span>🔊</span>
-        <span class="sql-audio-label">Voice Playback</span>
+<!-- Typing Indicator -->
+<div class="sql-typing" id="sql-typing" style="display:none;">
+    <div class="sql-typing-dots">
+        <span></span><span></span><span></span>
     </div>
-    <audio id="sql-audio-player" controls></audio>
+    <span class="sql-typing-text" id="sql-typing-text">Thinking...</span>
 </div>
 
-<!-- History -->
-<div id="sql-history"></div>
+<!-- Follow-up Suggestions -->
+<div id="sql-followups-container"></div>
+
+<!-- Input Area -->
+<div class="sql-input-area fade-up-3">
+    <textarea class="sql-transcript-box" id="sql-transcript-box" placeholder="Type your SQL question here… or tap the microphone above." rows="1" oninput="onTranscriptInput()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendQuestion()}"></textarea>
+    <button class="sql-send-btn" id="sql-send-btn" onclick="sendQuestion()" disabled title="Send question (Enter)">➤</button>
+</div>
+
+<!-- Hidden audio element for TTS -->
+<audio id="sql-audio-player" class="sql-audio-hidden"></audio>
+
+<!-- Browser warning -->
+<div id="sql-browser-warn" style="display:none;text-align:center;margin-top:0.25rem;padding:0.4rem 1rem;font-size:0.75rem;color:var(--text-3);">
+    ⚠️ Speech recognition requires <strong>Chrome</strong> or <strong>Edge</strong>. You can still type.
+</div>
+
+<!-- Hands-free toggle -->
+<div class="sql-handsfree">
+    <input type="checkbox" id="sql-handsfree" checked>
+    <label for="sql-handsfree">Auto-listen after response</label>
+</div>
 
 {% endblock %}
 
@@ -594,66 +601,59 @@ document.addEventListener('DOMContentLoaded', function() {
     // ── State ────────────────────────────────────────────
     let currentRecognition = null;
     let isRecording = false;
-    let lastAnswer = '';
-    let historyCount = 0;
+    let conversationHistory = [];
+    let isProcessing = false;
+    let currentUtterance = null;
+    let isSpeaking = false;
+    let autoListen = document.getElementById('sql-handsfree').checked;
 
     // ── DOM refs ─────────────────────────────────────────
     const micBtn       = document.getElementById('sql-mic-btn');
     const micLabel     = document.getElementById('sql-mic-label');
-    const micStatus    = document.getElementById('sql-mic-status');
+    const statusBar    = document.getElementById('sql-status-bar');
+    const statusText   = document.getElementById('sql-status-text');
     const transcriptBox= document.getElementById('sql-transcript-box');
-    const askBtn       = document.getElementById('sql-ask-btn');
-    const speakBtn     = document.getElementById('sql-speak-btn');
-    const loadingEl    = document.getElementById('sql-loading');
-    const answerCard   = document.getElementById('sql-answer-card');
-    const answerText   = document.getElementById('sql-answer-text');
-    const answerTime   = document.getElementById('sql-answer-time');
-    const questionEcho = document.getElementById('sql-question-echo');
-    const sourcesEl    = document.getElementById('sql-sources');
-    const sourceList   = document.getElementById('sql-source-list');
-    const audioSection = document.getElementById('sql-audio-section');
+    const sendBtn      = document.getElementById('sql-send-btn');
+    const conversation = document.getElementById('sql-conversation');
+    const emptyEl      = document.getElementById('sql-empty');
+    const typingEl     = document.getElementById('sql-typing');
+    const typingText   = document.getElementById('sql-typing-text');
+    const followupsEl  = document.getElementById('sql-followups-container');
     const audioPlayer  = document.getElementById('sql-audio-player');
     const errorEl      = document.getElementById('sql-error');
     const errorText    = document.getElementById('sql-error-text');
-    const historyEl    = document.getElementById('sql-history');
+    const handsfreeCb  = document.getElementById('sql-handsfree');
 
     const FASTAPI_URL = 'http://localhost:8000';
 
-    // ── Enable ask button when transcript has text ───────
-    transcriptBox.addEventListener('input', function() {
-        askBtn.disabled = !this.value.trim();
+    handsfreeCb.addEventListener('change', function() {
+        autoListen = this.checked;
     });
 
-    // ── Status display ───────────────────────────────────
-    function setStatus(msg, isError) {
-        micStatus.textContent = msg;
-        if (isError) {
-            micStatus.classList.add('error');
-        } else {
-            micStatus.classList.remove('error');
-        }
-        console.log('[SQL-Training] ' + msg);
+    // ── Status ───────────────────────────────────────────
+    function setStatus(text, state) {
+        statusText.textContent = text;
+        statusBar.className = 'sql-status-bar ' + (state || 'ready');
+        console.log('[SQL-Tutor] ' + text);
     }
 
-    // ── Error handling ───────────────────────────────────
     function showError(msg) {
-        console.error('[SQL-Training] ERROR: ' + msg);
+        console.error('[SQL-Tutor] ERROR: ' + msg);
         errorText.textContent = msg;
         errorEl.classList.add('visible');
-        setTimeout(() => errorEl.classList.remove('visible'), 8000);
+        setTimeout(function() { errorEl.classList.remove('visible'); }, 8000);
     }
 
     function hideError() {
         errorEl.classList.remove('visible');
     }
 
-    // ── Speech Recognition (fresh instance per tap) ──────
+    // ── Speech Recognition ───────────────────────────────
     function stopRecording() {
         isRecording = false;
         micBtn.classList.remove('recording');
         micBtn.innerHTML = '\ud83c\udfa4';
         micLabel.textContent = 'Tap to speak';
-        console.log('[SQL-Training] Microphone stopped');
     }
 
     window.toggleRecording = function() {
@@ -665,6 +665,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Stop any ongoing TTS when user starts speaking
+        stopSpeaking();
+
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             showError('Speech Recognition is not supported in this browser. Please use Chrome or Edge.');
@@ -674,10 +677,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        transcriptBox.value = '';
-        askBtn.disabled = true;
-        setStatus('Starting microphone\u2026');
         hideError();
+        setStatus('Listening...', 'listening');
 
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
@@ -690,26 +691,15 @@ document.addEventListener('DOMContentLoaded', function() {
             currentRecognition = recognition;
             micBtn.classList.add('recording');
             micBtn.innerHTML = '⏹️';
-            micLabel.textContent = 'Listening\u2026';
-            setStatus('Speak your SQL question now');
-            console.log('[SQL-Training] Microphone started, listening...');
-        };
-
-        recognition.onaudiostart = function() {
-            console.log('[SQL-Training] Audio capture started');
-        };
-
-        recognition.onspeechstart = function() {
-            console.log('[SQL-Training] Speech detected');
-            setStatus('Speech detected\u2026');
+            micLabel.textContent = 'Listening...';
         };
 
         recognition.onresult = function(event) {
-            let interimTranscript = '';
             let finalTranscript = '';
+            let interimTranscript = '';
 
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript;
+            for (var i = event.resultIndex; i < event.results.length; i++) {
+                var transcript = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
                     finalTranscript += transcript;
                 } else {
@@ -719,28 +709,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (finalTranscript) {
                 transcriptBox.value = finalTranscript;
-                askBtn.disabled = false;
-                console.log('[SQL-Training] Final transcript: "' + finalTranscript + '"');
-                setStatus('Transcript captured');
+                sendBtn.disabled = false;
+                setStatus('Got it! Processing...', 'thinking');
+                // Auto-send after speech ends
+                setTimeout(function() { sendQuestion(); }, 300);
             } else if (interimTranscript) {
                 transcriptBox.value = interimTranscript;
-                setStatus('Hearing you\u2026');
             }
         };
 
         recognition.onerror = function(event) {
-            console.error('[SQL-Training] Speech recognition error:', event.error, event.message);
             stopRecording();
             if (event.error === 'not-allowed') {
                 showError('Microphone access was denied. Please allow microphone permission in your browser settings.');
+                setStatus('Microphone blocked', 'ready');
             } else if (event.error === 'no-speech') {
-                showError('No speech was detected. Please try again and speak clearly.');
-            } else if (event.error === 'audio-capture') {
-                showError('No microphone found. Please connect a microphone and try again.');
-            } else if (event.error === 'network') {
-                showError('Network error during speech recognition. Check your internet connection.');
+                showError('No speech detected. Please try again and speak clearly.');
+                setStatus('No speech detected', 'ready');
+            } else if (event.error === 'aborted') {
+                setStatus('Ready for your question', 'ready');
             } else {
                 showError('Speech recognition error: ' + event.error);
+                setStatus('Ready for your question', 'ready');
             }
         };
 
@@ -749,294 +739,353 @@ document.addEventListener('DOMContentLoaded', function() {
             if (currentRecognition === recognition) {
                 currentRecognition = null;
             }
-            const text = transcriptBox.value.trim();
-            console.log('[SQL-Training] Recognition ended, transcript length:', text.length);
-            if (text) {
-                setStatus('Transcript ready \u2014 sending to assistant\u2026');
-                askSqlAssistant();
-            } else {
-                setStatus('');
+            var text = transcriptBox.value.trim();
+            if (!text && !isProcessing) {
+                setStatus('Ready for your question', 'ready');
             }
         };
 
         try {
             recognition.start();
-            console.log('[SQL-Training] recognition.start() called');
         } catch(e) {
-            console.error('[SQL-Training] recognition.start() failed:', e);
             showError('Could not start microphone. It may already be in use.');
+            setStatus('Microphone error', 'ready');
         }
     };
 
-    window.clearTranscript = function() {
-        transcriptBox.value = '';
-        askBtn.disabled = true;
-        setStatus('');
-        hideError();
-        console.log('[SQL-Training] Transcript cleared');
-    };
-
-    // ── Ask SQL Assistant ────────────────────────────────
-    window.askSqlAssistant = async function() {
-        const question = transcriptBox.value.trim();
-        console.log('[SQL-Training] askSqlAssistant called, question: "' + question + '"');
-        if (!question) {
-            showError('Please enter or speak a question first.');
-            return;
+    // ── TTS ──────────────────────────────────────────────
+    function stopSpeaking() {
+        if (currentUtterance) {
+            try { window.speechSynthesis.cancel(); } catch(e) {}
+            currentUtterance = null;
         }
+        isSpeaking = false;
+    }
 
-        hideError();
-        askBtn.disabled = true;
-        speakBtn.disabled = true;
-        loadingEl.classList.add('visible');
-        loadingEl.querySelector('span').textContent = 'Generating Answer\u2026';
-        answerCard.classList.remove('visible');
-        audioSection.classList.remove('visible');
-        setStatus('Sending question to SQL Assistant\u2026');
+    function speakText(text, callback) {
+        if (!text) { if (callback) callback(); return; }
 
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
+        stopSpeaking();
+        isSpeaking = true;
+        setStatus('Speaking...', 'speaking');
 
-            const url = FASTAPI_URL + '/ask';
-            console.log('[SQL-Training] Fetching POST ' + url);
-            console.log('[SQL-Training] Request body:', JSON.stringify({ question: question }));
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question: question }),
-                signal: controller.signal
-            });
-
-            clearTimeout(timeoutId);
-            console.log('[SQL-Training] Response status:', response.status);
-
-            if (!response.ok) {
-                const errBody = await response.text().catch(() => '');
-                throw new Error('Server error (' + response.status + '): ' + errBody || response.statusText);
-            }
-
-            const data = await response.json();
-            console.log('[SQL-Training] Answer received:', data);
-
-            // Archive previous answer to history
-            if (answerCard.classList.contains('visible')) {
-                archiveCurrentAnswer();
-            }
-
-            // Show answer
-            questionEcho.textContent = '\u275d ' + (data.question || question) + ' \u275e';
-            answerText.innerHTML = formatAnswer(data.answer || 'No answer received.');
-            answerTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            lastAnswer = data.answer || '';
-            console.log('[SQL-Training] Answer displayed, length:', lastAnswer.length);
-
-            // Sources
-            if (data.sources && data.sources.length > 0) {
-                sourceList.innerHTML = '';
-                data.sources.forEach(function(src) {
-                    var item = document.createElement('div');
-                    item.className = 'sql-source-item';
-                    var srcText = typeof src === 'string' ? src : (src.source || src.title || src.name || JSON.stringify(src));
-                    item.innerHTML = '<span class="sql-source-icon">\ud83d\udcc4</span> ' + escapeHtml(srcText);
-                    sourceList.appendChild(item);
-                });
-                sourcesEl.classList.add('visible');
-                console.log('[SQL-Training] Sources displayed:', data.sources.length);
-            } else {
-                sourcesEl.classList.remove('visible');
-            }
-
-            answerCard.classList.add('visible');
-            speakBtn.disabled = false;
-            setStatus('Answer ready');
-            loadingEl.querySelector('span').textContent = 'Thinking\u2026';
-
-            // Auto-play voice
-            console.log('[SQL-Training] Auto-playing voice response...');
-            speakAnswer();
-
-        } catch (err) {
-            console.error('[SQL-Training] askSqlAssistant error:', err);
-            if (err.name === 'AbortError') {
-                showError('Request timed out. The SQL assistant server may be slow or unavailable.');
-            } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-                showError('Cannot reach the SQL Assistant at ' + FASTAPI_URL + '/ask.');
-            } else {
-                showError(err.message || 'An unexpected error occurred.');
-            }
-        } finally {
-            loadingEl.classList.remove('visible');
-            askBtn.disabled = !transcriptBox.value.trim();
-            if (!micStatus.textContent) {
-                setStatus('');
-            }
-        }
-    };
-
-    // ── Speak Answer (browser SpeechSynthesis with server TTS fallback) ──
-    window.speakAnswer = async function() {
-        if (!lastAnswer) {
-            showError('No answer to play. Ask a question first.');
-            return;
-        }
-
-        speakBtn.disabled = true;
-        speakBtn.innerHTML = '\u23f3 Loading\u2026';
-        setStatus('Preparing voice playback\u2026');
-
-        // Try browser SpeechSynthesis first (no server dependency)
-        function speakWithBrowser(text) {
+        // Try browser SpeechSynthesis first
+        function tryBrowserTTS() {
             return new Promise(function(resolve, reject) {
                 if (!window.speechSynthesis) {
                     reject(new Error('SpeechSynthesis not available'));
                     return;
                 }
-                var utterance = new SpeechSynthesisUtterance(text);
+                // Strip markdown-like formatting for cleaner speech
+                var cleanText = text
+                    .replace(/```[\s\S]*?```/g, '')
+                    .replace(/`([^`]+)`/g, '$1')
+                    .replace(/\*\*([^*]+)\*\*/g, '$1')
+                    .replace(/<[^>]*>/g, '')
+                    .replace(/\n+/g, '. ')
+                    .trim();
+
+                var utterance = new SpeechSynthesisUtterance(cleanText);
                 utterance.lang = 'en-US';
-                utterance.rate = 1.0;
+                utterance.rate = 0.95;
                 utterance.pitch = 1.0;
                 utterance.volume = 1.0;
+                currentUtterance = utterance;
+
                 utterance.onend = function() {
-                    console.log('[SQL-Training] Browser TTS ended');
+                    currentUtterance = null;
+                    isSpeaking = false;
                     resolve();
                 };
                 utterance.onerror = function(e) {
-                    console.warn('[SQL-Training] Browser TTS error:', e);
-                    reject(e);
+                    currentUtterance = null;
+                    isSpeaking = false;
+                    if (e.error !== 'canceled') reject(e);
+                    else resolve(); // canceled by user is not an error
                 };
                 window.speechSynthesis.cancel();
                 window.speechSynthesis.speak(utterance);
-                console.log('[SQL-Training] Browser TTS started');
-                setStatus('Playing response (browser voice)\u2026');
             });
         }
 
-        // Try server-based TTS
-        async function speakWithServer(text) {
-            var controller = new AbortController();
-            var timeoutId = setTimeout(function() { controller.abort(); }, 20000);
+        function tryServerTTS() {
+            return fetch(FASTAPI_URL + '/speak', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text }),
+            }).then(function(response) {
+                if (!response.ok) throw new Error('TTS server error');
+                return response.blob();
+            }).then(function(blob) {
+                var url = URL.createObjectURL(blob);
+                audioPlayer.src = url;
+                return new Promise(function(resolve, reject) {
+                    audioPlayer.onended = function() {
+                        isSpeaking = false;
+                        resolve();
+                    };
+                    audioPlayer.onerror = function() {
+                        isSpeaking = false;
+                        reject(new Error('Audio playback failed'));
+                    };
+                    audioPlayer.play().catch(function(e) {
+                        isSpeaking = false;
+                        reject(e);
+                    });
+                });
+            });
+        }
 
-            var url = FASTAPI_URL + '/speak';
-            console.log('[SQL-Training] Fetching POST ' + url);
+        tryBrowserTTS()
+            .catch(function(browserErr) {
+                console.warn('[SQL-Tutor] Browser TTS failed, trying server:', browserErr);
+                return tryServerTTS().catch(function(serverErr) {
+                    console.warn('[SQL-Tutor] Server TTS also failed:', serverErr);
+                    isSpeaking = false;
+                    setStatus('Answer ready', 'ready');
+                });
+            })
+            .then(function() {
+                isSpeaking = false;
+                if (callback) callback();
+            });
+    }
+
+    // ── Stop speaking indicator on messages ──────────────
+    function removeSpeakingIndicators() {
+        conversation.querySelectorAll('.sql-msg-speaking').forEach(function(el) {
+            el.remove();
+        });
+    }
+
+    function addSpeakingIndicator(msgEl) {
+        removeSpeakingIndicators();
+        var ind = document.createElement('div');
+        ind.className = 'sql-msg-speaking';
+        ind.innerHTML = '<span class="bar"></span><span class="bar"></span><span class="bar"></span> Speaking...';
+        msgEl.querySelector('.sql-msg-bubble').appendChild(ind);
+    }
+
+    // ── Send Question ────────────────────────────────────
+    function onTranscriptInput() {
+        sendBtn.disabled = !transcriptBox.value.trim();
+        // Auto-resize
+        transcriptBox.style.height = 'auto';
+        transcriptBox.style.height = Math.min(transcriptBox.scrollHeight, 120) + 'px';
+    }
+    window.onTranscriptInput = onTranscriptInput;
+
+    window.sendQuestion = async function() {
+        var question = transcriptBox.value.trim();
+        if (!question || isProcessing) return;
+
+        hideError();
+        isProcessing = true;
+        sendBtn.disabled = true;
+        transcriptBox.value = '';
+        transcriptBox.style.height = 'auto';
+
+        // Hide empty state
+        emptyEl.style.display = 'none';
+
+        // Add user message
+        addUserMessage(question);
+
+        // Save to history
+        conversationHistory.push({ role: 'user', content: question });
+
+        // Show typing indicator
+        typingEl.style.display = 'flex';
+        typingText.textContent = 'Searching lectures...';
+        setStatus('Searching lecture content...', 'thinking');
+
+        try {
+            var controller = new AbortController();
+            var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
+
+            var url = FASTAPI_URL + '/ask';
+            var body = JSON.stringify({
+                question: question,
+                history: conversationHistory.slice(0, -1) // don't include the current question
+            });
+
+            typingText.textContent = 'Generating answer...';
+            setStatus('Generating answer...', 'thinking');
 
             var response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: text }),
+                body: body,
                 signal: controller.signal
             });
 
             clearTimeout(timeoutId);
 
             if (!response.ok) {
-                throw new Error('TTS server error (' + response.status + ')');
+                var errBody = await response.text().catch(function() { return ''; });
+                throw new Error('Server error (' + response.status + '): ' + (errBody || response.statusText));
             }
 
-            var blob = await response.blob();
-            console.log('[SQL-Training] Audio blob received, size:', blob.size, 'type:', blob.type);
-            var audioUrl = URL.createObjectURL(blob);
+            var data = await response.json();
+            var answer = data.answer || 'No answer received.';
+            var sources = data.sources || [];
+            var followUps = data.follow_ups || [];
 
-            audioPlayer.src = audioUrl;
-            audioSection.classList.add('visible');
-            setStatus('Playing response (server voice)\u2026');
+            // Add tutor message
+            var msgEl = addTutorMessage(answer, sources);
 
-            var playPromise = audioPlayer.play();
-            if (playPromise !== undefined) {
-                return playPromise.then(function() {
-                    console.log('[SQL-Training] Server audio playback started');
-                });
-            }
-        }
+            // Save to history
+            conversationHistory.push({ role: 'assistant', content: answer });
 
-        try {
-            // 1st attempt: browser SpeechSynthesis (fast, no server needed)
-            await speakWithBrowser(lastAnswer);
-        } catch (browserErr) {
-            console.warn('[SQL-Training] Browser TTS failed, trying server:', browserErr);
-            try {
-                // 2nd attempt: Edge-TTS server endpoint
-                await speakWithServer(lastAnswer);
-            } catch (serverErr) {
-                console.error('[SQL-Training] Both TTS methods failed:', serverErr);
-                if (serverErr.name === 'AbortError') {
-                    showError('Voice playback timed out.');
-                } else if (serverErr.message.includes('Failed to fetch') || serverErr.message.includes('NetworkError')) {
-                    showError('Cannot reach the TTS server. Using browser text-to-speech failed.');
+            // Show follow-up suggestions
+            showFollowUps(followUps);
+
+            // Remove typing indicator
+            typingEl.style.display = 'none';
+
+            // Speak the answer
+            addSpeakingIndicator(msgEl);
+            setStatus('Speaking...', 'speaking');
+
+            await speakText(answer, function() {
+                removeSpeakingIndicators();
+                // Hands-free: auto re-listen
+                if (autoListen && !isRecording && !isProcessing) {
+                    setStatus('Ready — listening for your next question...', 'listening');
+                    setTimeout(function() { toggleRecording(); }, 600);
                 } else {
-                    showError('Voice playback error. Please read the answer above.');
+                    setStatus('Ready for your next question', 'ready');
                 }
-                // Show the answer text only as fallback
-                audioSection.classList.remove('visible');
+            });
+
+        } catch (err) {
+            console.error('[SQL-Tutor] sendQuestion error:', err);
+            typingEl.style.display = 'none';
+            if (err.name === 'AbortError') {
+                showError('Request timed out. The SQL tutor server may be slow or unavailable.');
+            } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+                showError('Cannot reach the SQL Tutor at ' + FASTAPI_URL + '/ask. Is the RAG server running?');
+            } else {
+                showError(err.message || 'An unexpected error occurred.');
             }
+            setStatus('Error — try again', 'ready');
         } finally {
-            speakBtn.disabled = false;
-            speakBtn.innerHTML = '\ud83d\udd0a Play Answer';
+            isProcessing = false;
+            if (!isSpeaking) {
+                setStatus('Ready for your next question', 'ready');
+            }
         }
     };
 
-    // ── Archive to History ───────────────────────────────
-    function archiveCurrentAnswer() {
-        historyCount++;
-        if (historyCount === 1) {
-            const divider = document.createElement('div');
-            divider.className = 'sql-history-divider';
-            divider.textContent = 'Previous Questions';
-            historyEl.prepend(divider);
+    // ── User Message ─────────────────────────────────────
+    function addUserMessage(text) {
+        var msg = document.createElement('div');
+        msg.className = 'sql-msg sql-msg-user';
+        var time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        msg.innerHTML =
+            '<div class="sql-msg-avatar">👤</div>' +
+            '<div class="sql-msg-bubble">' +
+                escapeHtml(text) +
+                '<div class="sql-msg-time">' + time + '</div>' +
+            '</div>';
+        conversation.appendChild(msg);
+        scrollToBottom();
+        return msg;
+    }
+
+    // ── Tutor Message ────────────────────────────────────
+    function addTutorMessage(text, sources) {
+        var msg = document.createElement('div');
+        msg.className = 'sql-msg sql-msg-tutor';
+        var time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        var sourcesHtml = '';
+        if (sources && sources.length > 0) {
+            var items = sources.map(function(s) {
+                var name = typeof s === 'string' ? s : (s.source || s.title || s.name || '');
+                return '<div class="sql-msg-source-item">📄 ' + escapeHtml(name) + '</div>';
+            }).join('');
+            sourcesHtml =
+                '<div class="sql-msg-sources">' +
+                    '<button class="sql-msg-sources-toggle" onclick="this.nextElementSibling.classList.toggle(\'visible\')">📎 Sources (' + sources.length + ')</button>' +
+                    '<div class="sql-msg-sources-list">' + items + '</div>' +
+                '</div>';
         }
 
-        const clone = answerCard.cloneNode(true);
-        clone.id = 'sql-history-' + historyCount;
-        clone.style.opacity = '0.6';
-        clone.classList.add('visible');
+        msg.innerHTML =
+            '<div class="sql-msg-avatar">🤖</div>' +
+            '<div class="sql-msg-bubble">' +
+                formatAnswer(text) +
+                sourcesHtml +
+                '<div class="sql-msg-time">' + time + '</div>' +
+            '</div>';
+        conversation.appendChild(msg);
+        scrollToBottom();
+        return msg;
+    }
 
-        // Insert after divider
-        const divider = historyEl.querySelector('.sql-history-divider');
-        if (divider && divider.nextSibling) {
-            historyEl.insertBefore(clone, divider.nextSibling);
-        } else {
-            historyEl.appendChild(clone);
-        }
+    // ── Follow-up Suggestions ────────────────────────────
+    function showFollowUps(followUps) {
+        followupsEl.innerHTML = '';
+        if (!followUps || followUps.length === 0) return;
+
+        var container = document.createElement('div');
+        container.className = 'sql-followups';
+
+        followUps.forEach(function(fu) {
+            var chip = document.createElement('span');
+            chip.className = 'sql-followup-chip';
+            chip.textContent = fu;
+            chip.onclick = function() {
+                transcriptBox.value = fu;
+                sendBtn.disabled = false;
+                sendQuestion();
+            };
+            container.appendChild(chip);
+        });
+
+        followupsEl.appendChild(container);
+        scrollToBottom();
     }
 
     // ── Helpers ───────────────────────────────────────────
-    function formatAnswer(text) {
-        // Simple markdown-like formatting
-        let formatted = escapeHtml(text);
+    function scrollToBottom() {
+        setTimeout(function() {
+            conversation.scrollTop = conversation.scrollHeight;
+        }, 50);
+    }
 
+    function formatAnswer(text) {
+        var formatted = escapeHtml(text);
         // Code blocks: ```...```
         formatted = formatted.replace(/```(\w*)\n?([\s\S]*?)```/g, function(_, lang, code) {
             return '<pre><code>' + code.trim() + '</code></pre>';
         });
-
         // Inline code: `...`
         formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
-
         // Bold: **...**
         formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
         // Line breaks
         formatted = formatted.replace(/\n/g, '<br>');
-
         return formatted;
     }
 
     function escapeHtml(text) {
-        const div = document.createElement('div');
+        var div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
 
     // ── Keyboard shortcut ────────────────────────────────
     document.addEventListener('keydown', function(e) {
-        // Ctrl+Enter to submit
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && transcriptBox.value.trim()) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             e.preventDefault();
-            askSqlAssistant();
+            sendQuestion();
         }
     });
 
+    // Initial status
+    setStatus('Ready for your question', 'ready');
 });
 </script>
 {% endblock %}

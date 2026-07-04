@@ -101,7 +101,9 @@ The 'meaning' field should be a concise English translation."""
         return self.get_fallback_words(level_num, target_language)
 
     def get_fallback_words(self, level_num, lang):
-        """Generate deterministic fallback words with a large pool to avoid repeats"""
+        """Generate deterministic fallback words with a large pool and real meanings"""
+        from dictionary_service import dictionary_service
+        
         base_words = self._build_large_word_pool()
         
         vocab = base_words.get(lang, base_words['es'])
@@ -111,18 +113,23 @@ The 'meaning' field should be a concise English translation."""
         if pool_size == 0:
             return words
         
-        # Use sliding window: each level takes 5 consecutive words
-        # This guarantees uniqueness until pool is exhausted
         start_idx = ((level_num - 1) * 5) % pool_size
         
         for i in range(5):
             idx = (start_idx + i) % pool_size
-            word = vocab[idx]
+            word_text = vocab[idx]
+            definition = dictionary_service.get_meaning(word_text, lang)
+            if definition:
+                meaning = definition["meaning"]
+                example = definition.get("explanation", meaning)
+            else:
+                meaning = word_text
+                example = f"A word in {lang}."
             words.append({
-                'word': word, 
-                'pronunciation': f'/{word}/', 
-                'meaning': f'Meaning of {word}', 
-                'example': f'This is {word} in context.'
+                'word': word_text,
+                'pronunciation': f'/{word_text}/',
+                'meaning': meaning,
+                'example': example,
             })
             
         return words
